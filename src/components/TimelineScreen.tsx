@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter } from 'lucide-react';
+import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter, ShieldCheck, Heart } from 'lucide-react';
 import { Incident, CategoryType } from '../types';
 import { analyzeIncidentPatterns } from '../aiEngine';
 
@@ -59,6 +59,42 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
         return 'bg-charcoal-800 text-charcoal-300 border-charcoal-700';
     }
   };
+
+  // If total incidents in store is zero, render warm onboarding state
+  if (incidents.length === 0) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-12 pb-28 text-center space-y-6">
+        <div className="bg-charcoal-800/60 border border-charcoal-700/80 rounded-3xl p-8 space-y-6 shadow-lg backdrop-blur-sm">
+          
+          <div className="w-16 h-16 rounded-full bg-teal-950/80 border border-teal-500/30 flex items-center justify-center text-teal-400 mx-auto shadow-inner">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-charcoal-100 tracking-tight">Your Private Journal</h2>
+            <p className="text-sm text-charcoal-300 leading-relaxed max-w-md mx-auto">
+              Nothing logged yet. When something happens, you can capture it here in your own words — it stays private and organized for you.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={onLogNew}
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white font-medium text-sm transition shadow-lg shadow-teal-900/40 flex items-center justify-center space-x-2 mx-auto active:scale-95"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Log your first incident</span>
+            </button>
+          </div>
+
+          <p className="text-[11px] text-charcoal-400 font-mono pt-2 border-t border-charcoal-700/50">
+            Encrypted & stored locally on this device only
+          </p>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
