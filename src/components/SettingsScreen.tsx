@@ -22,6 +22,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [pinInput, setPinInput] = useState(settings.pinCode || '');
   const [quickExitUrl, setQuickExitUrl] = useState(settings.quickExitUrl || 'https://weather.com');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const handleTogglePin = () => {
@@ -52,7 +53,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     showNotice('Quick Exit URL saved.');
   };
 
-  const handleExportJson = () => {
+  const triggerExportJson = () => {
+    setShowExportConfirm(true);
+  };
+
+  const handleConfirmExportJson = () => {
+    setShowExportConfirm(false);
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(incidents, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
@@ -212,7 +218,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
-            onClick={handleExportJson}
+            onClick={triggerExportJson}
             className="p-3 bg-charcoal-900 hover:bg-charcoal-900/80 border border-charcoal-700 rounded-xl flex items-center space-x-2 text-charcoal-200 text-left transition"
           >
             <Download className="w-4 h-4 text-teal-400 shrink-0" />
@@ -258,6 +264,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Export Confirmation Modal */}
+      {showExportConfirm && (
+        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center space-x-3 text-amber-400">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-base font-semibold text-charcoal-100">Unencrypted File Warning</h3>
+            </div>
+            <p className="text-xs text-charcoal-300 leading-relaxed">
+              This file will be saved to your device without encryption. Make sure to store or delete it somewhere safe.
+            </p>
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                onClick={() => setShowExportConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmExportJson}
+                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition"
+              >
+                Acknowledge & Save File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Wipe Confirmation Modal */}
       {showClearConfirm && (

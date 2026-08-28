@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, EyeOff, ShieldCheck } from 'lucide-react';
 
 interface PinLockModalProps {
@@ -9,8 +9,30 @@ interface PinLockModalProps {
 export const PinLockModal: React.FC<PinLockModalProps> = ({ correctPin, onSuccess }) => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    let timer: any = null;
+    if (cooldownRemaining > 0) {
+      timer = setInterval(() => {
+        setCooldownRemaining(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setFailedAttempts(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [cooldownRemaining]);
 
   const handleKeyPress = (num: string) => {
+    if (cooldownRemaining > 0) return;
     if (pin.length < 4) {
       const nextPin = pin + num;
       setPin(nextPin);
@@ -18,11 +40,17 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({ correctPin, onSucces
       
       if (nextPin.length === 4) {
         if (nextPin === correctPin) {
+          setFailedAttempts(0);
           onSuccess();
         } else {
           setTimeout(() => {
+            const newFailed = failedAttempts + 1;
+            setFailedAttempts(newFailed);
             setError(true);
             setPin('');
+            if (newFailed >= 5) {
+              setCooldownRemaining(30);
+            }
           }, 200);
         }
       }
@@ -30,9 +58,12 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({ correctPin, onSucces
   };
 
   const handleDelete = () => {
+    if (cooldownRemaining > 0) return;
     setPin(prev => prev.slice(0, -1));
     setError(false);
   };
+
+  const isKeypadDisabled = cooldownRemaining > 0;
 
   return (
     <div className="fixed inset-0 z-50 bg-charcoal-950/95 backdrop-blur-md flex flex-col items-center justify-center p-4 select-none">
@@ -60,17 +91,22 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({ correctPin, onSucces
           ))}
         </div>
 
-        {error && (
-          <p className="text-xs text-accent-rose font-medium animate-shake">Incorrect PIN. Please try again.</p>
-        )}
+        {cooldownRemaining > 0 ? (
+          <p className="text-xs text-accent-rose font-medium animate-shake">
+            Too many failed attempts. Please wait {cooldownRemaining}s before trying again.
+          </p>
+        ) : error ? (
+          <p className="text-xs text-accent-rose font-medium animate-shake">Incorrect PIN</p>
+        ) : null}
 
         {/* Keypad */}
-        <div className="grid grid-cols-3 gap-4 w-full max-w-[280px] pt-2">
+        <div className={`grid grid-cols-3 gap-4 w-full max-w-[280px] pt-2 ${isKeypadDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => (
             <button
               key={num}
               onClick={() => handleKeyPress(num)}
-              className="w-16 h-16 rounded-full bg-charcoal-800/80 hover:bg-charcoal-700 active:bg-teal-800/50 text-charcoal-100 font-medium text-2xl flex items-center justify-center mx-auto transition border border-charcoal-700/50"
+              disabled={isKeypadDisabled}
+              className="w-16 h-16 rounded-full bg-charcoal-800/80 hover:bg-charcoal-700 active:bg-teal-800/50 text-charcoal-100 font-medium text-2xl flex items-center justify-center mx-auto transition border border-charcoal-700/50 disabled:cursor-not-allowed"
             >
               {num}
             </button>
@@ -78,13 +114,15 @@ export const PinLockModal: React.FC<PinLockModalProps> = ({ correctPin, onSucces
           <div className="w-16 h-16"></div>
           <button
             onClick={() => handleKeyPress('0')}
-            className="w-16 h-16 rounded-full bg-charcoal-800/80 hover:bg-charcoal-700 active:bg-teal-800/50 text-charcoal-100 font-medium text-2xl flex items-center justify-center mx-auto transition border border-charcoal-700/50"
+            disabled={isKeypadDisabled}
+            className="w-16 h-16 rounded-full bg-charcoal-800/80 hover:bg-charcoal-700 active:bg-teal-800/50 text-charcoal-100 font-medium text-2xl flex items-center justify-center mx-auto transition border border-charcoal-700/50 disabled:cursor-not-allowed"
           >
             0
           </button>
           <button
             onClick={handleDelete}
-            className="w-16 h-16 rounded-full bg-charcoal-800/40 hover:bg-charcoal-800 text-charcoal-400 hover:text-charcoal-200 flex items-center justify-center mx-auto transition"
+            disabled={isKeypadDisabled}
+            className="w-16 h-16 rounded-full bg-charcoal-800/40 hover:bg-charcoal-800 text-charcoal-400 hover:text-charcoal-200 flex items-center justify-center mx-auto transition disabled:cursor-not-allowed"
           >
             <EyeOff className="w-5 h-5" />
           </button>

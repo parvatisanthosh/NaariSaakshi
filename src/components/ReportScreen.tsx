@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check } from 'lucide-react';
+import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check, AlertTriangle } from 'lucide-react';
 import { Incident } from '../types';
 import { ReportConfig, ReportType, downloadPdfReport, generateReportDocumentText } from '../reportEngine';
 
@@ -16,9 +16,10 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
   // Selected incident IDs (default to all)
   const [selectedIds, setSelectedIds] = useState<string[]>(() => incidents.map(i => i.id));
   
-  // Preview Modal
+  // Preview & Export Modal State
   const [showPreview, setShowPreview] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === incidents.length) {
@@ -46,7 +47,12 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
 
   const previewText = generateReportDocumentText(incidents, config);
 
-  const handleDownloadPdf = () => {
+  const triggerDownloadPdf = () => {
+    setShowExportConfirm(true);
+  };
+
+  const handleConfirmDownloadPdf = () => {
+    setShowExportConfirm(false);
     downloadPdfReport(incidents, config);
     setDownloadSuccess(true);
     setTimeout(() => setDownloadSuccess(false), 3000);
@@ -234,7 +240,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
         </button>
 
         <button
-          onClick={handleDownloadPdf}
+          onClick={triggerDownloadPdf}
           disabled={selectedIds.length === 0}
           className="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white font-medium text-xs transition shadow-lg shadow-teal-900/40 flex items-center justify-center space-x-2 disabled:opacity-50"
         >
@@ -251,6 +257,35 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
           )}
         </button>
       </div>
+
+      {/* UNENCRYPTED FILE WARNING MODAL */}
+      {showExportConfirm && (
+        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center space-x-3 text-amber-400">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-base font-semibold text-charcoal-100">Unencrypted File Warning</h3>
+            </div>
+            <p className="text-xs text-charcoal-300 leading-relaxed">
+              This file will be saved to your device without encryption. Make sure to store or delete it somewhere safe.
+            </p>
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                onClick={() => setShowExportConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDownloadPdf}
+                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition"
+              >
+                Acknowledge & Download PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DOCUMENT PREVIEW MODAL */}
       {showPreview && (
@@ -281,7 +316,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
               <button
                 onClick={() => {
                   setShowPreview(false);
-                  handleDownloadPdf();
+                  triggerDownloadPdf();
                 }}
                 className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-medium flex items-center space-x-1.5"
               >

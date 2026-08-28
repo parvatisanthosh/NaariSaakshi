@@ -28,22 +28,111 @@ export const App: React.FC = () => {
   } | null>(null);
   const bannerTimerRef = useRef<any | null>(null);
 
+  // Auto-lock on inactivity (3 mins) or tab loss of focus (> 30s)
+  const blurTimeRef = useRef<number | null>(null);
+
   useEffect(() => {
     // Load initial storage data
-    const loadedIncidents = StorageService.getIncidents();
-    const loadedSettings = StorageService.getSettings();
-    setIncidents(loadedIncidents);
-    setSettings(loadedSettings);
+    const loadInitialData = async () => {
+      const loadedSettings = StorageService.getSettings();
+      setSettings(loadedSettings);
 
-    if (loadedSettings.pinEnabled && loadedSettings.pinCode) {
-      setIsLocked(true);
-    }
+      if (loadedSettings.pinEnabled && loadedSettings.pinCode) {
+        setIsLocked(true);
+      }
+
+      const loadedIncidents = await StorageService.getIncidents();
+      setIncidents(loadedIncidents);
+    };
+
+    loadInitialData();
   }, []);
 
+  useEffect(() => {
+    // Only set up auto-lock if PIN is enabled, PIN code exists, and app is currently unlocked
+    if (!settings.pinEnabled || !settings.pinCode || isLocked) {
+      return;
+    }
+
+    const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+    const BLUR_TIMEOUT_MS = 30 * 1000; // 30 seconds
+
+    let inactivityTimer: any = null;
+    let blurTimer: any = null;
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        setIsLocked(true);
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        blurTimeRef.current = Date.now();
+        if (blurTimer) clearTimeout(blurTimer);
+        blurTimer = setTimeout(() => {
+          setIsLocked(true);
+        }, BLUR_TIMEOUT_MS);
+      } else {
+        if (blurTimer) clearTimeout(blurTimer);
+        if (blurTimeRef.current && Date.now() - blurTimeRef.current >= BLUR_TIMEOUT_MS) {
+          setIsLocked(true);
+        }
+        blurTimeRef.current = null;
+        resetInactivityTimer();
+      }
+    };
+
+    const handleWindowBlur = () => {
+      if (!blurTimeRef.current) {
+        blurTimeRef.current = Date.now();
+      }
+      if (blurTimer) clearTimeout(blurTimer);
+      blurTimer = setTimeout(() => {
+        setIsLocked(true);
+      }, BLUR_TIMEOUT_MS);
+    };
+
+    const handleWindowFocus = () => {
+      if (blurTimer) clearTimeout(blurTimer);
+      if (blurTimeRef.current && Date.now() - blurTimeRef.current >= BLUR_TIMEOUT_MS) {
+        setIsLocked(true);
+      }
+      blurTimeRef.current = null;
+      resetInactivityTimer();
+    };
+
+    // Initial start of inactivity timer
+    resetInactivityTimer();
+
+    // Listeners for user activity
+    const activityEvents = ['mousemove', 'keydown', 'click', 'touchstart', 'scroll'];
+    activityEvents.forEach(evt => window.addEventListener(evt, handleActivity));
+
+    // Listeners for visibility and focus/blur
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      if (blurTimer) clearTimeout(blurTimer);
+      activityEvents.forEach(evt => window.removeEventListener(evt, handleActivity));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [settings.pinEnabled, settings.pinCode, isLocked]);
+
   // Save Incident Handler
-  const handleSaveIncident = (newIncident: Incident) => {
+  const handleSaveIncident = async (newIncident: Incident) => {
     const previousAnalysis = analyzeIncidentPatterns(incidents);
-    const updatedList = StorageService.addIncident(newIncident);
+    const updatedList = await StorageService.addIncident(newIncident);
     setIncidents(updatedList);
     setActiveTab('timeline');
 
@@ -70,39 +159,42 @@ export const App: React.FC = () => {
   };
 
   // Update Incident Handler
-  const handleUpdateIncident = (updated: Incident) => {
-    const updatedList = StorageService.updateIncident(updated);
+  const handleUpdateIncident = async (updated: Incident) => {
+    const updatedList = await StorageService.updateIncident(updated);
     setIncidents(updatedList);
     setSelectedIncident(updated);
   };
 
   // Delete Incident Handler
-  const handleDeleteIncident = (id: string) => {
-    const updatedList = StorageService.deleteIncident(id);
+  const handleDeleteIncident = async (id: string) => {
+    const updatedList = await StorageService.deleteIncident(id);
     setIncidents(updatedList);
     setSelectedIncident(null);
   };
 
   // Settings Handlers
-  const handleUpdateSettings = (newSettings: AppSettings) => {
+  const handleUpdateSettings = async (newSettings: AppSettings) => {
     const saved = StorageService.saveSettings(newSettings);
     setSettings(saved);
+    if (incidents.length > 0) {
+      await StorageService.saveIncidents(incidents);
+    }
   };
 
-  const handleResetSeedData = () => {
-    const seeded = StorageService.resetToSeedData();
+  const handleResetSeedData = async () => {
+    const seeded = await StorageService.resetToSeedData();
     setIncidents(seeded);
     setSelectedIncident(null);
   };
 
-  const handleClearAllData = () => {
-    const empty = StorageService.clearAllData();
+  const handleClearAllData = async () => {
+    const empty = await StorageService.clearAllData();
     setIncidents(empty);
     setSelectedIncident(null);
   };
 
-  const handleImportData = (imported: Incident[]) => {
-    StorageService.saveIncidents(imported);
+  const handleImportData = async (imported: Incident[]) => {
+    await StorageService.saveIncidents(imported);
     setIncidents(imported);
   };
 

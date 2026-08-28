@@ -138,55 +138,180 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 const STORAGE_KEY_INCIDENTS = 'evidenceher_incidents_v1';
 const STORAGE_KEY_SETTINGS = 'evidenceher_settings_v1';
+const STORAGE_KEY_SALT = 'evidenceher_salt_v1';
+const STORAGE_KEY_DEVICE_SECRET = 'evidenceher_device_secret_v1';
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+function getOrCreateSalt(): Uint8Array {
+  let saltStr = localStorage.getItem(STORAGE_KEY_SALT);
+  if (!saltStr) {
+    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+    saltStr = arrayBufferToBase64(saltBytes.buffer);
+    localStorage.setItem(STORAGE_KEY_SALT, saltStr);
+    return saltBytes;
+  }
+  return new Uint8Array(base64ToArrayBuffer(saltStr));
+}
+
+function getOrCreateDeviceSecret(): string {
+  let secret = localStorage.getItem(STORAGE_KEY_DEVICE_SECRET);
+  if (!secret) {
+    const secretBytes = crypto.getRandomValues(new Uint8Array(32));
+    secret = arrayBufferToBase64(secretBytes.buffer);
+    localStorage.setItem(STORAGE_KEY_DEVICE_SECRET, secret);
+  }
+  return secret;
+}
+
+async function getEncryptionPassphrase(): Promise<string> {
+  const settings = StorageService.getSettings();
+  if (settings.pinEnabled && settings.pinCode) {
+    return settings.pinCode;
+  }
+  return getOrCreateDeviceSecret();
+}
+
+async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
+  const encoder = new TextEncoder();
+  const passphraseBytes = encoder.encode(passphrase);
+  const baseKey = await crypto.subtle.importKey(
+    'raw',
+    passphraseBytes,
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  return await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt.buffer as ArrayBuffer,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptData(plainText: string): Promise<string> {
+  const salt = getOrCreateSalt();
+  const passphrase = await getEncryptionPassphrase();
+  const key = await deriveKey(passphrase, salt);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoder = new TextEncoder();
+  const encryptedBuffer = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    encoder.encode(plainText)
+  );
+
+  return JSON.stringify({
+    v: 1,
+    encrypted: true,
+    iv: arrayBufferToBase64(iv.buffer as ArrayBuffer),
+    salt: arrayBufferToBase64(salt.buffer as ArrayBuffer),
+    ciphertext: arrayBufferToBase64(encryptedBuffer)
+  });
+}
+
+async function decryptData(encryptedJsonStr: string): Promise<string> {
+  const payload = JSON.parse(encryptedJsonStr);
+  const iv = new Uint8Array(base64ToArrayBuffer(payload.iv));
+  const salt = new Uint8Array(base64ToArrayBuffer(payload.salt));
+  const ciphertext = base64ToArrayBuffer(payload.ciphertext) as ArrayBuffer;
+  const passphrase = await getEncryptionPassphrase();
+  const key = await deriveKey(passphrase, salt);
+
+  const decryptedBuffer = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    ciphertext
+  );
+  const decoder = new TextDecoder();
+  return decoder.decode(decryptedBuffer);
+}
 
 export class StorageService {
-  static getIncidents(): Incident[] {
+  static async getIncidents(): Promise<Incident[]> {
     try {
       const data = localStorage.getItem(STORAGE_KEY_INCIDENTS);
       if (!data) {
-        // Initialize with seed data on first run
-        this.saveIncidents(INITIAL_SEED_INCIDENTS);
+        await this.saveIncidents(INITIAL_SEED_INCIDENTS);
         return INITIAL_SEED_INCIDENTS;
       }
-      return JSON.parse(data);
+      
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        // Plaintext legacy / seed data -> auto-encrypt and return
+        await this.saveIncidents(parsed);
+        return parsed;
+      }
+
+      if (parsed && parsed.encrypted) {
+        const decryptedStr = await decryptData(data);
+        return JSON.parse(decryptedStr);
+      }
+
+      return INITIAL_SEED_INCIDENTS;
     } catch (e) {
       console.error('Failed to load incidents from storage:', e);
       return INITIAL_SEED_INCIDENTS;
     }
   }
 
-  static saveIncidents(incidents: Incident[]): void {
+  static async saveIncidents(incidents: Incident[]): Promise<void> {
     try {
-      localStorage.setItem(STORAGE_KEY_INCIDENTS, JSON.stringify(incidents));
+      const plainText = JSON.stringify(incidents);
+      const encryptedPayload = await encryptData(plainText);
+      localStorage.setItem(STORAGE_KEY_INCIDENTS, encryptedPayload);
     } catch (e) {
       console.error('Failed to save incidents to storage:', e);
     }
   }
 
-  static addIncident(incident: Incident): Incident[] {
-    const incidents = [incident, ...this.getIncidents()];
-    this.saveIncidents(incidents);
+  static async addIncident(incident: Incident): Promise<Incident[]> {
+    const incidents = [incident, ...(await this.getIncidents())];
+    await this.saveIncidents(incidents);
     return incidents;
   }
 
-  static updateIncident(updated: Incident): Incident[] {
-    const incidents = this.getIncidents().map(inc => inc.id === updated.id ? updated : inc);
-    this.saveIncidents(incidents);
+  static async updateIncident(updated: Incident): Promise<Incident[]> {
+    const incidents = (await this.getIncidents()).map(inc => inc.id === updated.id ? updated : inc);
+    await this.saveIncidents(incidents);
     return incidents;
   }
 
-  static deleteIncident(id: string): Incident[] {
-    const incidents = this.getIncidents().filter(inc => inc.id !== id);
-    this.saveIncidents(incidents);
+  static async deleteIncident(id: string): Promise<Incident[]> {
+    const incidents = (await this.getIncidents()).filter(inc => inc.id !== id);
+    await this.saveIncidents(incidents);
     return incidents;
   }
 
-  static resetToSeedData(): Incident[] {
-    this.saveIncidents(INITIAL_SEED_INCIDENTS);
+  static async resetToSeedData(): Promise<Incident[]> {
+    await this.saveIncidents(INITIAL_SEED_INCIDENTS);
     return INITIAL_SEED_INCIDENTS;
   }
 
-  static clearAllData(): Incident[] {
+  static async clearAllData(): Promise<Incident[]> {
     localStorage.removeItem(STORAGE_KEY_INCIDENTS);
     return [];
   }

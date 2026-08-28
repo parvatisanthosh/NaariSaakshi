@@ -240,8 +240,6 @@ export function analyzeIncidentPatterns(incidents: Incident[]): PatternInsightRe
       const rawName = p.name;
       const normalizedKey = normalizePersonName(rawName);
 
-      console.log(`[Pattern Analysis] Incident ID: ${inc.id} | Raw Name: "${rawName}" | Normalized Key: "${normalizedKey}"`);
-
       if (normalizedKey && normalizedKey !== 'individual involved' && normalizedKey !== 'unspecified') {
         const existing = personGroupMap.get(normalizedKey);
         if (existing) {
