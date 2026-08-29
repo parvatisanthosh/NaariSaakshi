@@ -177,7 +177,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
             HELP. WITHOUT THE HOLD UP.
           </h2>
           <p className="text-base sm:text-lg text-cream-ink/80 leading-relaxed">
-            Click any option below to see how NaariSaakshi instantly triggers emergency alerts and evidence logging.
+            Hover over or click any option below to see how NaariSaakshi instantly triggers emergency alerts and evidence logging.
           </p>
         </div>
 
@@ -189,6 +189,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
             
             {/* Step 1: Volume Button SOS */}
             <div 
+              onMouseEnter={() => setActiveStep(1)}
               onClick={() => setActiveStep(1)}
               className={`relative cursor-pointer rounded-3xl p-6 transition-all duration-300 transform border-2 ${
                 activeStep === 1
@@ -212,6 +213,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
 
             {/* Step 2: In-App SOS Button */}
             <div 
+              onMouseEnter={() => setActiveStep(2)}
               onClick={() => setActiveStep(2)}
               className={`relative cursor-pointer rounded-3xl p-6 transition-all duration-300 transform border-2 ${
                 activeStep === 2
@@ -235,6 +237,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
 
             {/* Step 3: Home Screen SOS Widget */}
             <div 
+              onMouseEnter={() => setActiveStep(3)}
               onClick={() => setActiveStep(3)}
               className={`relative cursor-pointer rounded-3xl p-6 transition-all duration-300 transform border-2 ${
                 activeStep === 3
@@ -653,6 +656,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
             return (
               <div 
                 key={idx}
+                onMouseEnter={() => setActiveTestimonial(idx)}
                 onClick={() => setActiveTestimonial(idx)}
                 style={{
                   backgroundColor: item.bgColor
