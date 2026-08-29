@@ -98,184 +98,171 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         const lng = position.coords.longitude;
         setCapturedCoords({ lat, lng });
         setLocationOptIn(true);
-        setIsLocationDetected(true);
 
-        const address = await fetchGeocodedAddress(lat, lng);
-        setEditLocation(address);
+        const addr = await fetchGeocodedAddress(lat, lng);
+        setEditLocation(addr);
         setIsLocating(false);
+        setIsLocationDetected(true);
       },
-      (err) => {
-        console.warn('Geolocation failed:', err);
-        setLocationError("Couldn't get your location — you can type it manually");
+      (error) => {
         setIsLocating(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError("Location permission denied. You can type location manually below.");
+        } else {
+          setLocationError("Couldn't detect location. Please type manually.");
+        }
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   };
 
   const handleClearLocationOptIn = () => {
     setLocationOptIn(false);
     setCapturedCoords(null);
-    setIsLocationDetected(false);
+    setContributeSignalOptIn(false);
   };
 
-  // Field Touched / Edited Tracking State
+  // Track which fields user edited inside the review modal
   const [touchedFields, setTouchedFields] = useState<{ [key: string]: boolean }>({});
 
-  const markTouched = (fieldName: string) => {
-    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  const markTouched = (field: string) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
   };
 
-  // Setup Web Speech Recognition if available
-  useEffect(() => {
+  // Handle Speech Recognition API setup
+  const initSpeechRecognition = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event: any) => {
-        let currentTranscript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript + ' ';
-        }
-        if (currentTranscript.trim()) {
-          setInputText(currentTranscript);
-          setSpeechErrorMsg(null);
-        }
-      };
-
-      recognition.onerror = (e: any) => {
-        console.warn('Speech recognition error:', e.error);
-        handleSpeechFallback("Didn't catch that — you can type instead");
-      };
-
-      speechRecognitionRef.current = recognition;
+    if (!SpeechRecognition) {
+      return null;
     }
-  }, []);
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
 
-  // Focus textarea when switching to text mode
-  useEffect(() => {
-    if (mode === 'text' && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [mode]);
+    recognition.onresult = (event: any) => {
+      let currentTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        currentTranscript += event.results[i][0].transcript + ' ';
+      }
+      setInputText(currentTranscript.trim());
+    };
 
-  const handleSpeechFallback = (msg: string) => {
-    setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
+    recognition.onerror = (event: any) => {
+      console.warn('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        setShowMicExplainerModal(true);
+      } else if (event.error === 'no-speech') {
+        // Subtle non-disruptive note
+      } else {
+        setSpeechErrorMsg("Voice input interrupted. You can switch to 'Type Notes' anytime.");
+      }
+    };
 
-    if (speechRecognitionRef.current) {
-      try { speechRecognitionRef.current.stop(); } catch (e) {}
-    }
-
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      } catch (e) {}
-    }
-
-    setSpeechErrorMsg(msg);
-    setMode('text');
+    return recognition;
   };
 
   const handleInitiateRecording = () => {
     if (isRecording) {
       stopRecording();
     } else {
-      setShowMicExplainerModal(true);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setShowMicExplainerModal(true);
+        return;
+      }
+      startRecording();
     }
   };
 
   const startRecording = async () => {
     try {
-      setShowMicExplainerModal(false);
-      setRecordingSeconds(0);
-      setIsRecording(true);
       setSpeechErrorMsg(null);
       audioChunksRef.current = [];
 
-      if (speechRecognitionRef.current) {
-        try { 
-          speechRecognitionRef.current.start(); 
-        } catch (e) {
-          console.warn('Failed to start speech recognition:', e);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
-      } else {
-        handleSpeechFallback("Voice recognition isn't supported on this browser — you can type instead");
-        return;
-      }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Audio = reader.result as string;
+          const voiceAtt: Attachment = {
+            id: 'voice-' + Math.random().toString(36).substr(2, 6),
+            name: `Voice_Log_${new Date().toLocaleTimeString().replace(/\s/g, '')}.webm`,
+            type: 'audio',
+            dataUrl: base64Audio,
+            size: audioBlob.size,
+            uploadedAt: new Date().toISOString()
+          };
+          setVoiceAudioAttachment(voiceAtt);
+        };
+        reader.readAsDataURL(audioBlob);
+
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
 
       timerRef.current = setInterval(() => {
         setRecordingSeconds(prev => prev + 1);
       }, 1000);
 
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-          }
-        };
-
-        mediaRecorder.onstop = () => {
-          if (audioChunksRef.current.length > 0) {
-            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const audioBase64 = reader.result as string;
-              setVoiceAudioAttachment({
-                id: 'att-voice-' + Math.random().toString(36).substr(2, 6),
-                name: `Original_Voice_Recording_${new Date().toISOString().slice(0, 10)}.webm`,
-                type: 'audio',
-                dataUrl: audioBase64,
-                size: audioBlob.size,
-                uploadedAt: new Date().toISOString(),
-                isLiveCapture: true,
-                captureMethod: 'voice_recording'
-              });
-            };
-            reader.readAsDataURL(audioBlob);
-          }
-        };
-
-        mediaRecorder.start();
+      const recognition = initSpeechRecognition();
+      if (recognition) {
+        speechRecognitionRef.current = recognition;
+        try {
+          recognition.start();
+        } catch (err) {
+          console.warn('Recognition failed to start directly:', err);
+        }
       }
-    } catch (err) {
-      console.warn('Microphone access unavailable or denied:', err);
-      handleSpeechFallback("Didn't catch that — microphone unavailable. You can type instead.");
+
+    } catch (err: any) {
+      console.error('Error starting audio recording:', err);
+      setShowMicExplainerModal(true);
     }
   };
 
   const stopRecording = () => {
-    setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
     if (speechRecognitionRef.current) {
-      try { speechRecognitionRef.current.stop(); } catch (e) {}
-    }
-
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-      } catch (e) {}
+        speechRecognitionRef.current.stop();
+      } catch (err) {
+        console.warn('Error stopping speech recognition:', err);
+      }
     }
-
-    if (!inputText.trim()) {
-      handleSpeechFallback("Didn't catch that — you can type instead");
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
     }
+    setIsRecording(false);
   };
 
-  const formatTime = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,95 +278,104 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         dataUrl: reader.result as string,
         size: file.size,
         uploadedAt: new Date().toISOString(),
-        isLiveCapture: false,
         captureMethod: 'upload'
       };
       setAttachmentsList(prev => [...prev, newAtt]);
     };
     reader.readAsDataURL(file);
-    if (e.target) e.target.value = '';
   };
 
-  const handleAddCapturedPhoto = (newPhotoAtt: Attachment) => {
-    setAttachmentsList(prev => [...prev, newPhotoAtt]);
+  const handleCameraPhotoCaptured = (newAtt: Attachment) => {
+    setAttachmentsList(prev => [...prev, newAtt]);
   };
 
-  const handleRemoveAttachment = (id: string) => {
-    setAttachmentsList(prev => prev.filter(a => a.id !== id));
+  const handleRemoveAttachment = (attId: string) => {
+    setAttachmentsList(prev => prev.filter(a => a.id !== attId));
   };
 
-  // Run AI Structuring on raw text
-  const handleProcessSubmit = () => {
-    if (!inputText.trim() || isProcessing) return;
-
-    setIsProcessing(true);
-    setProcessingMessage('Reading through what you shared...');
-
-    // Rotating messages during processing
-    const msgTimer = setTimeout(() => {
-      setProcessingMessage('Organizing the details...');
-    }, 500);
-
-    // Guaranteed minimum visibility duration of 1000ms
-    setTimeout(() => {
-      clearTimeout(msgTimer);
-      const extracted = extractIncidentFromRawText(inputText);
-      setExtractedData(extracted);
-
-      setTouchedFields({});
-
-      const nowFormatted = new Date().toISOString().slice(0, 16);
-      setEditDatetime(nowFormatted);
-      setEditLocation(extracted.location);
-      setEditCategory(extracted.category);
-      setEditPersonName(extracted.people_involved[0]?.name || 'Rohan Sharma');
-      setEditPersonRole(extracted.people_involved[0]?.roleOrRelationship || 'Colleague');
-      setEditSummary(extracted.structured_narrative.summary);
-      setEditActions(extracted.structured_narrative.keyActions);
-      setEditWitnesses(extracted.witnesses.join(', '));
-      setEditSeverity(extracted.severity_estimate || 3);
-
-      setIsProcessing(false);
-      setShowReviewModal(true);
-    }, 1000);
-  };
-
-  const handleFinalSave = () => {
+  // Submit and Trigger Extraction Process
+  const handleProcessSubmit = async () => {
     if (!inputText.trim()) return;
 
-    const people: PersonInvolved[] = editPersonName.trim() ? [{
+    if (isRecording) {
+      stopRecording();
+    }
+
+    setIsProcessing(true);
+    setProcessingMessage('Structuring key facts, dates, and people silently...');
+
+    setTimeout(async () => {
+      try {
+        const extracted = await extractIncidentFromRawText(inputText);
+        setExtractedData(extracted);
+
+        // Populate Editable Modal fields
+        setEditDatetime(extracted.incident_datetime ? new Date(extracted.incident_datetime).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16));
+        setEditLocation(extracted.location || '');
+        setEditCategory(extracted.category || 'Verbal');
+        setEditPersonName(extracted.people_involved[0]?.name || '');
+        setEditPersonRole(extracted.people_involved[0]?.roleOrRelationship || '');
+        setEditSummary(extracted.structured_narrative?.summary || '');
+        setEditActions(extracted.structured_narrative?.keyActions || []);
+        setEditWitnesses(extracted.witnesses?.join(', ') || '');
+        setEditSeverity(extracted.severity_estimate || 3);
+
+        setTouchedFields({});
+        setIsProcessing(false);
+        setShowReviewModal(true);
+      } catch (err) {
+        console.error('Error during AI extraction:', err);
+        setIsProcessing(false);
+      }
+    }, 900);
+  };
+
+  // User confirms final save in the modal
+  const handleFinalSave = async () => {
+    if (!extractedData) return;
+
+    const finalPeople: PersonInvolved[] = editPersonName.trim() ? [{
       id: 'p-' + Math.random().toString(36).substr(2, 6),
       name: editPersonName.trim(),
-      roleOrRelationship: editPersonRole.trim() || 'Role not specified'
+      roleOrRelationship: editPersonRole.trim() || 'Unspecified'
     }] : [];
 
+    const finalWitnesses = editWitnesses
+      .split(',')
+      .map(w => w.trim())
+      .filter(Boolean);
+
+    const finalAttachments = [...attachmentsList];
+    if (voiceAudioAttachment) {
+      finalAttachments.unshift(voiceAudioAttachment);
+    }
+
+    const isUserModified = Object.keys(touchedFields).length > 0;
+
     const newIncident: Incident = {
-      id: 'inc-' + Math.random().toString(36).substr(2, 8),
+      id: 'inc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
       created_at: new Date().toISOString(),
-      incident_datetime: new Date(editDatetime).toISOString(),
-      location: editLocation || 'Unspecified location',
-      ...(locationOptIn && capturedCoords ? { latitude: capturedCoords.lat, longitude: capturedCoords.lng } : {}),
-      people_involved: people,
+      incident_datetime: editDatetime ? new Date(editDatetime).toISOString() : new Date().toISOString(),
+      location: editLocation.trim() || 'Unspecified location',
+      latitude: capturedCoords ? capturedCoords.lat : undefined,
+      longitude: capturedCoords ? capturedCoords.lng : undefined,
       category: editCategory,
+      people_involved: finalPeople,
+      witnesses: finalWitnesses,
       narrative_raw: inputText,
       narrative_structured: {
-        summary: editSummary,
-        context: extractedData?.structured_narrative?.context || 'User confirmed details',
+        summary: editSummary.trim() || 'Incident record logged',
+        context: 'Logged via NaariSaakshi',
         keyActions: editActions.length > 0 ? editActions : [inputText],
-        impactDescription: extractedData?.structured_narrative?.impactDescription || 'Logged contemporaneously by user.',
-        recommendedFollowUp: extractedData?.structured_narrative?.recommendedFollowUp || 'Preserve evidence.'
+        impactDescription: 'Not specified'
       },
-      witnesses: editWitnesses ? editWitnesses.split(',').map(w => w.trim()).filter(Boolean) : [],
+      tags: [],
       severity: editSeverity,
-      attachments: [
-        ...attachmentsList,
-        ...(voiceAudioAttachment ? [voiceAudioAttachment] : [])
-      ],
-      user_edited: Object.keys(touchedFields).length > 0,
-      tags: [editCategory, ...(people[0]?.name ? [people[0].name] : [])]
+      attachments: finalAttachments,
+      user_edited: isUserModified
     };
 
-    if (contributeSignalOptIn && locationOptIn && capturedCoords) {
+    if (contributeSignalOptIn && capturedCoords) {
       contributeAnonymousSignal(capturedCoords.lat, capturedCoords.lng, editCategory);
     }
 
@@ -387,13 +383,6 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
   };
 
   const renderFieldBadge = (fieldName: string) => {
-    if (fieldName === 'location' && isLocationDetected && !touchedFields['location']) {
-      return (
-        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-950 text-teal-300 border border-teal-700/60 transition">
-          <span>📍 Detected</span>
-        </span>
-      );
-    }
     const isEdited = touchedFields[fieldName];
     if (isEdited) {
       return (
@@ -404,7 +393,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       );
     }
     return (
-      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-magenta border border-white/10">
+      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-cream text-cream-ink border border-black/10">
         <Sparkles className="w-2.5 h-2.5 text-magenta" />
         <span>AI-suggested</span>
       </span>
@@ -412,82 +401,68 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
+    <div className="w-full space-y-8 pb-28 relative">
       
-      {/* Processing State Overlay */}
-      {isProcessing && (
-        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
-          <div className="bg-bg-black border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center space-y-4 shadow-2xl film-grain">
-            <div className="w-14 h-14 rounded-full bg-magenta/20 border border-magenta/40 flex items-center justify-center text-magenta mx-auto">
-              <Loader2 className="w-7 h-7 animate-spin" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-display text-2xl text-text-light">{processingMessage}</h3>
-              <p className="text-xs text-text-muted">Extracting facts, dates, and people silently...</p>
-            </div>
-          </div>
-        </div>
+      {showCameraModal && (
+        <CameraCaptureModal
+          isOpen={showCameraModal}
+          locationText={editLocation}
+          onCapture={handleCameraPhotoCaptured}
+          onClose={() => setShowCameraModal(false)}
+          onFallbackToUpload={() => {
+            setShowCameraModal(false);
+            fileInputRef.current?.click();
+          }}
+        />
       )}
 
-      {/* Storage Size Awareness Banner */}
-      {storageInfo.isLowStorage && (
-        <div className="bg-amber-950/90 border border-amber-500/60 rounded-xl p-3 text-xs text-amber-200 flex items-center space-x-2 shadow-md">
-          <HardDrive className="w-4 h-4 text-amber-400 shrink-0" />
-          <span>You're running low on local storage ({storageInfo.usedMB} MB used) — consider exporting and clearing older entries.</span>
-        </div>
-      )}
-
-      {/* Camera Capture Modal */}
-      <CameraCaptureModal
-        isOpen={showCameraModal}
-        locationText={editLocation}
-        onCapture={handleAddCapturedPhoto}
-        onClose={() => setShowCameraModal(false)}
-        onFallbackToUpload={() => {
-          setSpeechErrorMsg("Camera access needed to take a photo — you can upload one instead");
-          fileInputRef.current?.click();
-        }}
-      />
-
-      {/* Microphone Explainer Modal */}
+      {/* Mic Permission Explanation Modal */}
       {showMicExplainerModal && (
-        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center space-x-3 text-teal-400">
-              <Mic className="w-6 h-6" />
-              <h3 className="text-base font-semibold text-charcoal-100">Microphone Access Needed</h3>
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-md p-8 space-y-6 shadow-2xl text-cream-ink">
+            <div className="flex items-center space-x-3 text-magenta">
+              <Mic className="w-7 h-7" />
+              <h3 className="font-display text-3xl text-cream-ink leading-none">MICROPHONE ACCESS NEEDED</h3>
             </div>
-            <p className="text-xs text-charcoal-300 leading-relaxed">
-              EvidenceHer needs microphone access to record audio and auto-transcribe it. Your audio stays private on your device.
+            
+            <p className="text-sm text-cream-ink/80 leading-relaxed font-medium">
+              Voice recording requires microphone permission. In your browser settings, allow microphone access for this site to record incident audio.
             </p>
+
+            <p className="text-xs text-cream-ink/70 font-medium">
+              Alternatively, you can switch to "Type Notes" mode anytime to write your experience.
+            </p>
+
             <div className="flex items-center space-x-3 pt-2">
               <button
                 onClick={() => setShowMicExplainerModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+                className="flex-1 py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
               >
-                Cancel
+                Close
               </button>
               <button
-                onClick={startRecording}
-                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition shadow-md flex items-center justify-center space-x-1"
+                onClick={() => {
+                  setShowMicExplainerModal(false);
+                  setMode('text');
+                }}
+                className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md"
               >
-                <Mic className="w-4 h-4" />
-                <span>Start Voice Recording</span>
+                SWITCH TO TYPING
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Top Banner Nudge */}
-      <div className="relative rounded-2xl bg-bg-black border border-white/10 p-5 film-grain overflow-hidden shadow-lg">
+      {/* Top Banner Header */}
+      <div className="relative rounded-3xl bg-bg-black border border-white/10 p-6 sm:p-8 film-grain overflow-hidden shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-r from-magenta/15 via-violet/10 to-transparent pointer-events-none" />
-        <div className="relative z-10 flex items-start space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-magenta/20 border border-magenta/40 flex items-center justify-center text-magenta shrink-0 mt-0.5">
-            <Sparkles className="w-5 h-5" />
+        <div className="relative z-10 flex items-start space-x-4">
+          <div className="w-12 h-12 rounded-2xl bg-magenta/20 border border-magenta/40 flex items-center justify-center text-magenta shrink-0 mt-0.5">
+            <Sparkles className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-display text-3xl tracking-wide text-text-light">LOG AN INCIDENT</h1>
+            <h1 className="font-display text-4xl sm:text-5xl tracking-wide text-text-light">LOG AN INCIDENT</h1>
             <p className="text-sm text-text-muted mt-1 leading-relaxed">
               "Just say or type what happened in your own words. We'll quietly organize it into a structured, timestamped record for you."
             </p>
@@ -496,39 +471,39 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       </div>
 
       {/* Mode Switcher Buttons */}
-      <div className="flex p-1.5 bg-white/5 rounded-full border border-white/10">
+      <div className="flex p-1.5 bg-white/5 rounded-full border border-white/10 shadow-sm">
         <button
           disabled={isProcessing}
           onClick={() => {
             setSpeechErrorMsg(null);
             setMode('voice');
           }}
-          className={`flex-1 py-2.5 px-4 rounded-full text-xs font-semibold uppercase tracking-wider transition flex items-center justify-center space-x-2 disabled:opacity-50 ${
+          className={`flex-1 py-3 px-6 rounded-full font-display font-bold text-lg tracking-wider uppercase transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 ${
             mode === 'voice'
-              ? 'bg-magenta text-bg-black shadow-md'
+              ? 'bg-magenta text-bg-black shadow-lg scale-[1.01]'
               : 'text-text-muted hover:text-text-light'
           }`}
         >
-          <Mic className="w-4 h-4" />
+          <Mic className="w-5 h-5" />
           <span>Voice Record</span>
         </button>
         <button
           disabled={isProcessing}
           onClick={() => setMode('text')}
-          className={`flex-1 py-2.5 px-4 rounded-full text-xs font-semibold uppercase tracking-wider transition flex items-center justify-center space-x-2 disabled:opacity-50 ${
+          className={`flex-1 py-3 px-6 rounded-full font-display font-bold text-lg tracking-wider uppercase transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 ${
             mode === 'text'
-              ? 'bg-magenta text-bg-black shadow-md'
+              ? 'bg-magenta text-bg-black shadow-lg scale-[1.01]'
               : 'text-text-muted hover:text-text-light'
           }`}
         >
-          <Type className="w-4 h-4" />
+          <Type className="w-5 h-5" />
           <span>Type Notes</span>
         </button>
       </div>
 
       {/* Inline Fallback Message Banner */}
       {speechErrorMsg && (
-        <div className="bg-amber-950/80 border border-amber-500/50 rounded-xl p-3 text-xs text-amber-200 flex items-center justify-between shadow-sm animate-fade-in">
+        <div className="bg-amber-950/80 border border-amber-500/50 rounded-2xl p-4 text-xs text-amber-200 flex items-center justify-between shadow-sm animate-fade-in">
           <div className="flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
             <span>{speechErrorMsg}</span>
@@ -544,33 +519,33 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
       {/* Voice Mode View */}
       {mode === 'voice' && (
-        <div className="bg-bg-black border border-white/10 rounded-2xl p-6 text-center space-y-6 film-grain">
-          <div className="flex flex-col items-center justify-center space-y-4">
+        <div className="bg-bg-black border border-white/10 rounded-3xl p-8 text-center space-y-6 film-grain shadow-xl">
+          <div className="flex flex-col items-center justify-center space-y-5">
             
             {/* Pulsing Mic Button */}
             <button
               disabled={isProcessing}
               onClick={handleInitiateRecording}
-              className={`w-28 h-28 rounded-full flex items-center justify-center transition-all transform active:scale-95 border-4 shadow-xl disabled:opacity-50 ${
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 transform active:scale-95 border-4 shadow-2xl disabled:opacity-50 ${
                 isRecording
-                  ? 'bg-magenta text-bg-black border-magenta/40 animate-pulse ring-8 ring-magenta/20'
-                  : 'bg-magenta text-bg-black border-magenta/40 hover:bg-magenta-deep'
+                  ? 'bg-magenta text-bg-black border-magenta/40 animate-pulse ring-8 ring-magenta/20 scale-105'
+                  : 'bg-magenta text-bg-black border-magenta/40 hover:bg-magenta-deep hover:scale-105'
               }`}
             >
-              {isRecording ? <MicOff className="w-12 h-12" /> : <Mic className="w-12 h-12" />}
+              {isRecording ? <MicOff className="w-14 h-14" /> : <Mic className="w-14 h-14" />}
             </button>
 
             <div>
               {isRecording ? (
                 <div className="space-y-1">
-                  <span className="inline-block px-3.5 py-1 rounded-full bg-magenta/20 text-magenta text-xs font-semibold tracking-wide uppercase">
+                  <span className="inline-block px-4 py-1.5 rounded-full bg-magenta/20 text-magenta text-xs font-bold tracking-wide uppercase">
                     Recording Live ({formatTime(recordingSeconds)})
                   </span>
-                  <p className="text-xs text-text-muted">Speak naturally. Tap button again when finished.</p>
+                  <p className="text-xs text-text-muted mt-1">Speak naturally. Tap button again when finished.</p>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <span className="text-sm font-semibold text-text-light block">Tap to start recording voice</span>
+                  <span className="font-display text-2xl text-text-light block">TAP TO START RECORDING VOICE</span>
                   <p className="text-xs text-text-muted">Speech is auto-transcribed securely on your device</p>
                 </div>
               )}
@@ -581,9 +556,9 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               <button
                 disabled={isProcessing}
                 onClick={() => setMode('text')}
-                className="inline-flex items-center space-x-1.5 text-xs text-magenta hover:text-text-light font-semibold px-4 py-2 rounded-full bg-white/5 border border-magenta/40 transition disabled:opacity-50"
+                className="inline-flex items-center space-x-2 text-xs text-magenta hover:text-text-light font-bold px-5 py-2.5 rounded-full bg-white/5 border border-magenta/40 transition disabled:opacity-50"
               >
-                <Type className="w-3.5 h-3.5" />
+                <Type className="w-4 h-4" />
                 <span>Prefer typing? Switch to text input</span>
               </button>
             </div>
@@ -591,7 +566,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
           {/* Transcript Preview Box */}
           {inputText && (
-            <div className="text-left bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+            <div className="text-left bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2">
               <span className="text-xs font-display tracking-wider text-magenta uppercase block">Transcribed Text</span>
               <p className="text-sm text-text-light leading-relaxed whitespace-pre-wrap">{inputText}</p>
             </div>
@@ -601,13 +576,13 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
       {/* Text Mode View */}
       {mode === 'text' && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-semibold text-text-muted">
+            <label className="block text-xs font-bold text-text-muted uppercase tracking-wider">
               Write what happened (include time, location, names, quotes if remembered):
             </label>
             {inputText && (
-              <span className="text-[10px] text-magenta bg-white/5 px-2 py-0.5 rounded-full border border-magenta/40">
+              <span className="text-[10px] text-magenta bg-white/5 px-3 py-1 rounded-full border border-magenta/40 font-bold">
                 Preserved from voice
               </span>
             )}
@@ -619,34 +594,34 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             onChange={(e) => setInputText(e.target.value)}
             rows={7}
             placeholder="e.g. Rohan came to my desk at 4:30 PM in the 4th floor pantry. He stood over me, made unwelcome personal remarks about my appearance, and said..."
-            className="w-full bg-white/5 border border-white/10 focus:border-magenta rounded-2xl p-4 text-sm text-text-light placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-magenta/20 transition-all leading-relaxed disabled:opacity-50"
+            className="w-full bg-white/5 border border-white/10 focus:border-magenta rounded-3xl p-5 text-sm sm:text-base text-text-light placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-magenta/20 transition-all leading-relaxed disabled:opacity-50 shadow-inner"
           />
         </div>
       )}
 
       {/* Evidentiary Attachment Options */}
-      <div className="bg-bg-black border border-white/10 rounded-2xl p-4 space-y-3 shadow-sm">
+      <div className="bg-bg-black border border-white/10 rounded-3xl p-6 space-y-4 shadow-xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-xs font-semibold text-text-light uppercase tracking-wider">
+          <div className="flex items-center space-x-2 text-xs font-display tracking-wider text-text-light uppercase">
             <Paperclip className="w-4 h-4 text-magenta" />
             <span>Evidentiary Attachments</span>
           </div>
-          <span className="text-[10px] text-text-muted">Stored locally on device</span>
+          <span className="text-[10px] font-mono text-text-muted">Stored locally on device</span>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <button
             type="button"
             disabled={isProcessing}
             onClick={() => setShowCameraModal(true)}
-            className="px-3.5 py-2 rounded-full bg-magenta/15 hover:bg-magenta/25 border border-magenta/40 text-magenta text-xs font-semibold flex items-center space-x-1.5 transition disabled:opacity-50"
+            className="px-4 py-2.5 rounded-full bg-magenta/15 hover:bg-magenta/25 border border-magenta/40 text-magenta text-xs font-bold flex items-center space-x-2 transition disabled:opacity-50"
           >
-            <Camera className="w-3.5 h-3.5" />
+            <Camera className="w-4 h-4" />
             <span>Take Watermarked Photo</span>
           </button>
 
-          <label className={`px-3.5 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-text-light text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <Paperclip className="w-3.5 h-3.5 text-magenta" />
+          <label className={`px-4 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-text-light text-xs font-bold flex items-center space-x-2 transition cursor-pointer ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <Paperclip className="w-4 h-4 text-magenta" />
             <span>Upload File / Image</span>
             <input
               ref={fileInputRef}
@@ -662,37 +637,37 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         {/* List Attached Items */}
         <div className="space-y-2 pt-1">
           {voiceAudioAttachment && (
-            <div className="flex items-center justify-between bg-white/5 border border-magenta/40 rounded-xl p-3 text-xs">
-              <div className="flex items-center space-x-2 text-magenta font-semibold">
-                <Mic className="w-4 h-4 text-magenta shrink-0" />
+            <div className="flex items-center justify-between bg-white/5 border border-magenta/40 rounded-2xl p-4 text-xs">
+              <div className="flex items-center space-x-3 text-magenta font-semibold">
+                <Mic className="w-5 h-5 text-magenta shrink-0" />
                 <div className="truncate max-w-[240px]">
-                  <span className="font-semibold block">🎙️ Original Voice Recording</span>
-                  <span className="text-[10px] text-text-muted">Raw audio preserved alongside transcript</span>
+                  <span className="font-bold block text-sm">🎙️ Original Voice Recording</span>
+                  <span className="text-[10px] font-mono text-text-muted">Raw audio preserved alongside transcript</span>
                 </div>
               </div>
               <button
                 type="button"
                 disabled={isProcessing}
                 onClick={() => setVoiceAudioAttachment(null)}
-                className="text-text-muted hover:text-magenta disabled:opacity-50"
+                className="text-text-muted hover:text-magenta transition disabled:opacity-50"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           )}
 
           {attachmentsList.map((att) => (
-            <div key={att.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3 text-xs">
-              <div className="flex items-center space-x-2 truncate pr-2">
+            <div key={att.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 text-xs">
+              <div className="flex items-center space-x-3 truncate pr-2">
                 {att.isLiveCapture ? (
-                  <Camera className="w-4 h-4 text-magenta shrink-0" />
+                  <Camera className="w-5 h-5 text-magenta shrink-0" />
                 ) : (
-                  <Paperclip className="w-4 h-4 text-text-muted shrink-0" />
+                  <Paperclip className="w-5 h-5 text-text-muted shrink-0" />
                 )}
                 <div className="truncate">
-                  <span className="text-text-light font-semibold block truncate">{att.name}</span>
+                  <span className="text-text-light font-bold text-sm block truncate">{att.name}</span>
                   {att.isLiveCapture && (
-                    <span className="text-[10px] text-magenta font-mono">📷 Live Watermarked Photo</span>
+                    <span className="text-[10px] text-magenta font-mono font-semibold">📷 Live Watermarked Photo</span>
                   )}
                 </div>
               </div>
@@ -700,71 +675,94 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                 type="button"
                 disabled={isProcessing}
                 onClick={() => handleRemoveAttachment(att.id)}
-                className="text-text-muted hover:text-magenta disabled:opacity-50"
+                className="text-text-muted hover:text-magenta transition disabled:opacity-50"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           ))}
         </div>
       </div>
 
+      {/* Storage usage note */}
+      {storageInfo && (
+        <div className="flex items-center space-x-2 text-[11px] text-text-muted px-2 font-mono">
+          <HardDrive className="w-3.5 h-3.5 text-magenta shrink-0" />
+          <span>Local storage used: {(storageInfo.usedBytes / 1024).toFixed(1)} KB</span>
+        </div>
+      )}
+
       {/* Action Buttons */}
-      <div className="pt-2 flex items-center space-x-3">
+      <div className="pt-4 flex items-center space-x-4">
         <button
           disabled={isProcessing}
           onClick={onCancel}
-          className="flex-1 py-3.5 rounded-full border border-magenta/50 text-magenta hover:bg-magenta/10 font-semibold text-xs uppercase tracking-wider transition disabled:opacity-50"
+          className="flex-1 py-4 rounded-full border-2 border-magenta/50 text-magenta hover:bg-magenta/10 font-display font-bold text-lg tracking-wider uppercase transition disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           onClick={handleProcessSubmit}
           disabled={!inputText.trim() || isProcessing}
-          className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-semibold text-xs uppercase tracking-wider transition shadow-lg shadow-magenta/20 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-4 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-lg tracking-wider uppercase transition shadow-xl shadow-magenta/30 hover:scale-[1.01] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <div className="flex items-center space-x-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" />
               <span>Structuring...</span>
             </div>
           ) : (
             <>
               <span>Structure & Review</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5" />
             </>
           )}
         </button>
       </div>
 
-      {/* MANDATORY REVIEW & EDIT MODAL (Trust Requirement: User MUST confirm before saving) */}
+      {/* Processing State Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
+          <div className="bg-bg-black border border-white/10 rounded-3xl p-8 max-w-sm w-full text-center space-y-4 shadow-2xl film-grain">
+            <div className="w-14 h-14 rounded-full bg-magenta/20 border border-magenta/40 flex items-center justify-center text-magenta mx-auto">
+              <Loader2 className="w-7 h-7 animate-spin" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-display text-2xl text-text-light">{processingMessage}</h3>
+              <p className="text-xs text-text-muted">Extracting facts, dates, and people silently...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MANDATORY REVIEW & EDIT MODAL (Trust Requirement) - High Contrast Cream Theme */}
       {showReviewModal && (
-        <div className="fixed inset-0 z-50 bg-bg-black/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-bg-black border border-white/10 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl my-auto">
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-8 space-y-6 shadow-2xl my-auto text-cream-ink">
             
-            <div className="flex items-start justify-between border-b border-white/10 pb-4">
+            <div className="flex items-start justify-between border-b border-black/10 pb-4">
               <div>
-                <div className="flex items-center space-x-2 text-magenta text-xs font-display tracking-wider uppercase">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Review AI Draft</span>
+                <div className="flex items-center space-x-2 text-magenta font-display text-lg tracking-wider uppercase">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>REVIEW AI DRAFT</span>
                 </div>
-                <h3 className="font-display text-2xl text-text-light mt-1">VERIFY EXTRACTED FIELDS</h3>
+                <h3 className="font-display text-3xl text-cream-ink mt-1 leading-none">VERIFY EXTRACTED FIELDS</h3>
                 
-                <p className="text-xs text-text-muted font-medium mt-1 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full inline-block">
+                <p className="text-xs text-cream-ink/80 font-semibold mt-2 bg-cream border border-black/10 px-4 py-1.5 rounded-full inline-block">
                   Review what I found — everything here is editable before you save.
                 </p>
               </div>
-              <button onClick={() => setShowReviewModal(false)} className="text-text-muted hover:text-text-light">
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowReviewModal(false)} className="text-cream-ink/60 hover:text-cream-ink font-bold text-xl">
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
+            <div className="space-y-4 text-xs font-medium">
 
               {/* Date & Time */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-text-muted font-semibold">Incident Date & Time</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-cream-ink font-bold uppercase tracking-wider">Incident Date & Time</label>
                   {renderFieldBadge('datetime')}
                 </div>
                 <input
@@ -774,18 +772,18 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     setEditDatetime(e.target.value);
                     markTouched('datetime');
                   }}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
+                  className="w-full bg-cream/40 border border-black/10 rounded-2xl p-3.5 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
                 />
               </div>
 
               {/* Location & Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-text-muted font-semibold">Location</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-cream-ink font-bold uppercase tracking-wider">Location</label>
                     {renderFieldBadge('location')}
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <input
                       type="text"
                       value={editLocation}
@@ -794,7 +792,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         markTouched('location');
                       }}
                       placeholder="e.g. 4th Floor Conference Room"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
+                      className="w-full bg-cream/40 border border-black/10 rounded-2xl p-3.5 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
                     />
 
                     <div className="flex items-center justify-between pt-1">
@@ -802,17 +800,17 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         type="button"
                         onClick={handleGetLocation}
                         disabled={isLocating}
-                        className="inline-flex items-center space-x-1.5 text-[11px] font-semibold px-3 py-1 rounded-full bg-magenta/15 hover:bg-magenta/25 text-magenta border border-magenta/40 transition disabled:opacity-50"
+                        className="inline-flex items-center space-x-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-magenta text-bg-black transition disabled:opacity-50 shadow-sm"
                       >
                         {isLocating ? (
                           <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             <span>Locating...</span>
                           </>
                         ) : (
                           <>
-                            <MapPin className="w-3 h-3" />
-                            <span>{locationOptIn ? '📍 Location Captured (Update)' : 'Use my current location'}</span>
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span>{locationOptIn ? '📍 Location Captured' : 'Use my current location'}</span>
                           </>
                         )}
                       </button>
@@ -821,35 +819,24 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         <button
                           type="button"
                           onClick={handleClearLocationOptIn}
-                          className="text-[10px] text-text-muted hover:text-magenta transition"
+                          className="text-[10px] text-cream-ink/60 hover:text-magenta font-bold transition"
                         >
                           Remove coordinates
                         </button>
                       )}
                     </div>
 
-                    {locationError && (
-                      <p className="text-[11px] text-amber-400 mt-1 flex items-center space-x-1">
-                        <AlertCircle className="w-3 h-3 inline shrink-0 mr-1" />
-                        <span>{locationError}</span>
-                      </p>
-                    )}
-
-                    <p className="text-[10px] text-text-muted leading-tight">
-                      Location is optional and only used to help you spot patterns — it's never shared unless you export a report.
-                    </p>
-
                     {locationOptIn && capturedCoords && (
-                      <div className="bg-white/5 border border-magenta/30 p-2.5 rounded-xl space-y-1 mt-2">
+                      <div className="bg-cream p-3 rounded-2xl border border-black/10 space-y-1 mt-2">
                         <label className="flex items-start space-x-2 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={contributeSignalOptIn}
                             onChange={(e) => setContributeSignalOptIn(e.target.checked)}
-                            className="mt-0.5 rounded bg-bg-black border-white/20 text-magenta focus:ring-magenta shrink-0"
+                            className="mt-0.5 rounded bg-white border-black/20 text-magenta focus:ring-magenta shrink-0"
                           />
-                          <span className="text-[11px] text-text-muted leading-snug">
-                            Anonymously contribute this incident's location and category to a shared safety signal for other users nearby. Your name, details, and identity are never included — only an anonymous count.
+                          <span className="text-[11px] text-cream-ink/80 leading-snug font-medium">
+                            Anonymously contribute location to a shared safety signal map nearby (+1 count only).
                           </span>
                         </label>
                       </div>
@@ -857,9 +844,9 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-text-muted font-semibold">Category</label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-cream-ink font-bold uppercase tracking-wider">Category</label>
                     {renderFieldBadge('category')}
                   </div>
                   <select
@@ -868,7 +855,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       setEditCategory(e.target.value as CategoryType);
                       markTouched('category');
                     }}
-                    className="w-full bg-bg-black border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
+                    className="w-full bg-cream/40 border border-black/10 rounded-2xl p-3.5 text-cream-ink font-bold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
                   >
                     <option value="Verbal">Verbal</option>
                     <option value="Physical">Physical</option>
@@ -883,10 +870,10 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               </div>
 
               {/* Person Involved */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-text-muted font-semibold">Person Involved (Name)</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-cream-ink font-bold uppercase tracking-wider">Person Involved (Name)</label>
                     {renderFieldBadge('personName')}
                   </div>
                   <input
@@ -897,13 +884,13 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       markTouched('personName');
                     }}
                     placeholder="e.g. Rohan Sharma"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
+                    className="w-full bg-cream/40 border border-black/10 rounded-2xl p-3.5 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
                   />
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-text-muted font-semibold">Role / Relationship</label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-cream-ink font-bold uppercase tracking-wider">Role / Relationship</label>
                     {renderFieldBadge('personRole')}
                   </div>
                   <input
@@ -914,15 +901,15 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       markTouched('personRole');
                     }}
                     placeholder="e.g. Manager, Senior Lead"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
+                    className="w-full bg-cream/40 border border-black/10 rounded-2xl p-3.5 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
                   />
                 </div>
               </div>
 
               {/* Auto Summary */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-text-muted font-semibold">Auto-Generated Summary</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-cream-ink font-bold uppercase tracking-wider">Auto-Generated Summary</label>
                   {renderFieldBadge('summary')}
                 </div>
                 <input
@@ -932,14 +919,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     setEditSummary(e.target.value);
                     markTouched('summary');
                   }}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
+                  className="w-full bg-cream/40 border border-black/10 rounded-2xl p-3.5 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
                 />
               </div>
 
               {/* Witnesses */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-text-muted font-semibold">Witnesses (Comma Separated)</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-cream-ink font-bold uppercase tracking-wider">Witnesses (Comma Separated)</label>
                   {renderFieldBadge('witnesses')}
                 </div>
                 <input
@@ -950,14 +937,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     markTouched('witnesses');
                   }}
                   placeholder="e.g. Priya Nair, Security Guard"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
+                  className="w-full bg-cream/40 border border-black/10 rounded-2xl p-3.5 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
                 />
               </div>
 
               {/* Severity Rating */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-text-muted font-semibold">Self-Rated Severity (1 to 5)</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-cream-ink font-bold uppercase tracking-wider">Self-Rated Severity (1 to 5)</label>
                   {renderFieldBadge('severity')}
                 </div>
                 <div className="flex space-x-2">
@@ -969,10 +956,10 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         setEditSeverity(rating);
                         markTouched('severity');
                       }}
-                      className={`flex-1 py-2 rounded-xl font-semibold transition-all ${
+                      className={`flex-1 py-3 rounded-xl font-bold transition-all shadow-sm ${
                         editSeverity === rating
-                          ? 'bg-magenta text-bg-black shadow-md'
-                          : 'bg-white/5 text-text-muted border border-white/10'
+                          ? 'bg-magenta text-bg-black shadow-md scale-105'
+                          : 'bg-cream/50 text-cream-ink border border-black/10 hover:bg-cream'
                       }`}
                     >
                       {rating}
@@ -984,19 +971,19 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center space-x-3 pt-3 border-t border-white/10">
+            <div className="flex items-center space-x-3 pt-4 border-t border-black/10">
               <button
                 onClick={() => setShowReviewModal(false)}
-                className="flex-1 py-3 rounded-full border border-magenta/50 text-magenta hover:bg-magenta/10 font-semibold text-xs uppercase tracking-wider transition"
+                className="flex-1 py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
               >
                 Back to Editing Text
               </button>
               <button
                 onClick={handleFinalSave}
-                className="flex-1 py-3 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-semibold text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center space-x-1"
+                className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-lg flex items-center justify-center space-x-2"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Confirm & Save Log</span>
+                <CheckCircle2 className="w-5 h-5" />
+                <span>CONFIRM & SAVE LOG</span>
               </button>
             </div>
 
