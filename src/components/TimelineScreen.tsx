@@ -106,19 +106,48 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
         }}
       />
 
-      {/* SECTION 1: HERO LANDING BANNER (NAZR Style) */}
-      <section className="relative z-10 rounded-3xl bg-bg-black border border-white/10 p-8 sm:p-16 shadow-2xl overflow-hidden film-grain w-full">
-        {/* Drifting skyline gradient background */}
-        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-magenta/25 via-violet/10 to-transparent pointer-events-none drifting-skyline" />
+      {/* SECTION 1: HERO LANDING BANNER (NAZR Style with Dynamic Hover Pink Halftone Texture) */}
+      <section className="relative z-10 rounded-3xl bg-bg-black border border-white/10 p-8 sm:p-16 shadow-2xl overflow-hidden film-grain w-full group cursor-default">
+        
+        {/* Halftone / Screentone Grain Matrix Layer (Pink Pop-Up Effect on Hover) */}
+        <div 
+          className="absolute inset-0 opacity-20 group-hover:opacity-100 transition-all duration-500 pointer-events-none mix-blend-screen"
+          style={{
+            backgroundImage: `radial-gradient(#E8368F 1.5px, transparent 1.5px)`,
+            backgroundSize: '8px 8px',
+            backgroundColor: 'rgba(232, 54, 143, 0.08)'
+          }}
+        />
 
-        <div className="relative z-10 space-y-6 w-full">
+        {/* Floating Pink Shield / Mascot Graphics on Hover (matching image layout) */}
+        <div className="absolute right-8 top-8 sm:right-16 sm:top-12 opacity-15 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-700 pointer-events-none transform translate-x-12 rotate-6">
+          <div className="w-32 h-44 sm:w-44 sm:h-60 rounded-3xl bg-gradient-to-tr from-magenta via-magenta-deep to-violet p-1 shadow-[0_0_50px_rgba(232,54,143,0.8)] flex flex-col justify-between">
+            <div className="bg-bg-black rounded-[20px] h-full p-4 flex flex-col items-center justify-between border border-magenta/40">
+              <div className="w-8 h-8 rounded-full bg-magenta text-bg-black flex items-center justify-center font-bold text-xs shadow-md">
+                100%
+              </div>
+              <Shield className="w-16 h-16 text-magenta animate-pulse" />
+              <div className="font-display text-sm tracking-wider text-text-light text-center uppercase">
+                SAFE & ENCRYPTED
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Magenta Glow Blob on Hover */}
+        <div className="absolute -right-16 -bottom-16 w-96 h-96 bg-magenta/30 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+        {/* Drifting skyline gradient background */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-bg-black via-magenta/10 to-transparent pointer-events-none drifting-skyline" />
+
+        <div className="relative z-10 space-y-6 w-full max-w-4xl">
           
           <div className="space-y-3">
-            <h1 className="font-display text-6xl sm:text-8xl lg:text-9xl text-text-light tracking-wide leading-none">
+            <h1 className="font-display text-6xl sm:text-8xl lg:text-9xl text-text-light tracking-wide leading-none drop-shadow-2xl">
               THE WORLD STARES.<br />
-              <span className="text-magenta">STARE BACK.</span>
+              <span className="text-magenta group-hover:text-magenta-light group-hover:drop-shadow-[0_0_35px_rgba(232,54,143,0.9)] transition-all duration-500">STARE BACK.</span>
             </h1>
-            <p className="text-base sm:text-xl text-text-muted leading-relaxed max-w-4xl pt-2">
+            <p className="text-base sm:text-xl text-text-muted group-hover:text-text-light transition-colors duration-500 leading-relaxed max-w-3xl pt-2 font-medium drop-shadow-md">
               India's first encrypted incident journaling ecosystem combining personal voice logging, AI pattern detection, and legal-ready complaint documentation.
             </p>
           </div>
@@ -126,7 +155,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
           <div className="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 max-w-xl">
             <button
               onClick={onLogNew}
-              className="px-10 py-5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-xl tracking-wider transition shadow-xl shadow-magenta/30 flex items-center justify-center space-x-2 active:scale-95"
+              className="px-10 py-5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-xl tracking-wider transition-all duration-300 shadow-xl shadow-magenta/40 hover:scale-105 hover:shadow-magenta/70 flex items-center justify-center space-x-2 active:scale-95"
             >
               <Plus className="w-6 h-6" />
               <span>LOG INCIDENT NOW</span>
@@ -134,7 +163,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
 
             <button
               onClick={onViewPatterns}
-              className="px-10 py-5 rounded-full bg-transparent hover:bg-white/5 border border-magenta/50 text-magenta font-display text-xl tracking-wider transition flex items-center justify-center space-x-2"
+              className="px-10 py-5 rounded-full bg-bg-black/80 backdrop-blur-md hover:bg-magenta hover:text-bg-black border-2 border-magenta text-magenta font-display text-xl tracking-wider transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 shadow-lg"
             >
               <span>ANALYZE PATTERNS</span>
               <ArrowRight className="w-6 h-6" />
@@ -142,16 +171,16 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
           </div>
 
           {/* Quick Stat Badges */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-white/10 text-sm">
-            <div className="flex items-center space-x-2.5 text-text-muted">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-white/15 text-sm font-semibold">
+            <div className="flex items-center space-x-2.5 text-text-light bg-white/5 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 group-hover:border-magenta/60 group-hover:bg-magenta/10 transition-all duration-300">
               <Lock className="w-5 h-5 text-magenta shrink-0" />
               <span>100% AES-GCM Encrypted</span>
             </div>
-            <div className="flex items-center space-x-2.5 text-text-muted">
+            <div className="flex items-center space-x-2.5 text-text-light bg-white/5 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 group-hover:border-magenta/60 group-hover:bg-magenta/10 transition-all duration-300">
               <Sparkles className="w-5 h-5 text-magenta shrink-0" />
               <span>3 Sec Voice AI Structuring</span>
             </div>
-            <div className="flex items-center space-x-2.5 text-text-muted">
+            <div className="flex items-center space-x-2.5 text-text-light bg-white/5 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 group-hover:border-magenta/60 group-hover:bg-magenta/10 transition-all duration-300">
               <FileText className="w-5 h-5 text-magenta shrink-0" />
               <span>POSH & Police PDF Ready</span>
             </div>

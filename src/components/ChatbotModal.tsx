@@ -82,65 +82,67 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-charcoal-800 border border-charcoal-700 rounded-3xl w-full max-w-lg h-[580px] flex flex-col shadow-2xl relative overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-white border border-black/10 rounded-3xl w-full max-w-lg h-[600px] flex flex-col shadow-2xl relative overflow-hidden text-cream-ink">
         
         {/* Header */}
-        <div className="p-4 border-b border-charcoal-700 bg-charcoal-850 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-full bg-teal-950 border border-teal-500/40 flex items-center justify-center text-teal-400">
-              <Bot className="w-4 h-4" />
+        <div className="p-5 border-b border-black/10 bg-cream flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-md">
+              <Bot className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-xs font-semibold text-charcoal-100">EvidenceHer Assistant</h3>
-              <span className="text-[10px] text-charcoal-400">Grounded Guidance & App Help</span>
+              <h3 className="font-display text-2xl text-cream-ink leading-none">NAARISAAKSHI ASSISTANT</h3>
+              <span className="text-xs font-mono font-bold text-cream-ink/60 block mt-0.5">GROUNDED GUIDANCE & APP HELP</span>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 text-charcoal-400 hover:text-charcoal-100 rounded-full bg-charcoal-900 border border-charcoal-700 transition"
+            className="p-2 text-cream-ink/60 hover:text-cream-ink transition rounded-full hover:bg-black/5"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Message Thread */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* Message Log */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-cream/20">
           {messages.map(msg => (
             <div
               key={msg.id}
-              className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex items-start space-x-3 ${msg.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}
             >
-              <div
-                className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed space-y-2 ${
-                  msg.sender === 'user'
-                    ? 'bg-teal-700 text-white rounded-br-none'
-                    : msg.isSafetyAlert
-                    ? 'bg-rose-950 border border-rose-500/60 text-rose-100 rounded-bl-none shadow-lg'
-                    : 'bg-charcoal-900 border border-charcoal-700 text-charcoal-200 rounded-bl-none'
-                }`}
-              >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ${
+                msg.sender === 'user'
+                  ? 'bg-cream text-cream-ink border border-black/10'
+                  : 'bg-magenta text-bg-black'
+              }`}>
+                {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+              </div>
+
+              <div className={`p-4 rounded-2xl max-w-[82%] text-xs sm:text-sm font-medium leading-relaxed shadow-sm ${
+                msg.sender === 'user'
+                  ? 'bg-cream text-cream-ink rounded-tr-none border border-black/10'
+                  : msg.isSafetyAlert
+                  ? 'bg-amber-100 border border-amber-300 text-amber-950 rounded-tl-none font-semibold'
+                  : 'bg-white text-cream-ink rounded-tl-none border border-black/10'
+              }`}>
+                <p>{msg.text}</p>
+
+                {/* Safety Alert Action CTA */}
                 {msg.isSafetyAlert && (
-                  <div className="flex items-center space-x-2 text-rose-400 font-bold uppercase text-[10px]">
-                    <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
-                    <span>Emergency Safety Routing</span>
+                  <div className="mt-3 pt-3 border-t border-amber-300/60">
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenSos();
+                      }}
+                      className="w-full py-2.5 rounded-full bg-magenta text-bg-black font-display font-bold text-sm tracking-wider uppercase transition shadow-md flex items-center justify-center space-x-1.5"
+                    >
+                      <PhoneCall className="w-4 h-4" />
+                      <span>OPEN EMERGENCY SOS NOW →</span>
+                    </button>
                   </div>
-                )}
-
-                <p className="whitespace-pre-wrap">{msg.text}</p>
-
-                {msg.isSafetyAlert && (
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onOpenSos();
-                    }}
-                    className="w-full mt-2 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition shadow-md flex items-center justify-center space-x-1.5"
-                  >
-                    <PhoneCall className="w-3.5 h-3.5" />
-                    <span>Open Emergency SOS Options →</span>
-                  </button>
                 )}
               </div>
             </div>
@@ -148,42 +150,47 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Suggestion Pills */}
-        <div className="px-4 py-1.5 bg-charcoal-850 border-t border-charcoal-750 flex items-center space-x-2 overflow-x-auto scrollbar-none text-[10px] shrink-0">
+        {/* Quick Suggestion Chips */}
+        <div className="px-4 py-2 bg-cream border-t border-black/5 flex items-center space-x-2 overflow-x-auto scrollbar-none text-[11px] shrink-0">
           {[
-            'POSH 3-month window?',
-            'What is Zero FIR?',
-            'Call recording rules',
-            'Quick Capture mode?'
-          ].map((pill, i) => (
+            'How do I file a POSH complaint?',
+            'Where is my data stored?',
+            'What is the Zero FIR rule?',
+            'How does pattern detection work?'
+          ].map((chip, idx) => (
             <button
-              key={i}
-              onClick={() => handleSendMessage(pill)}
-              className="px-2.5 py-1 rounded-full bg-charcoal-900 hover:bg-charcoal-700 text-teal-300 border border-teal-500/30 whitespace-nowrap transition"
+              key={idx}
+              onClick={() => handleSendMessage(chip)}
+              className="px-3 py-1.5 rounded-full bg-white hover:bg-magenta hover:text-bg-black border border-black/10 font-bold whitespace-nowrap text-cream-ink transition shrink-0"
             >
-              {pill}
+              {chip}
             </button>
           ))}
         </div>
 
-        {/* User Input Bar */}
-        <div className="p-3 border-t border-charcoal-700 bg-charcoal-850 flex items-center space-x-2 shrink-0">
+        {/* Input Bar */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }}
+          className="p-4 border-t border-black/10 bg-white flex items-center space-x-2 shrink-0"
+        >
           <input
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Ask a question about app features, POSH, or FIRs..."
-            className="flex-1 bg-charcoal-900 border border-charcoal-700 rounded-xl px-3.5 py-2.5 text-xs text-charcoal-100 placeholder-charcoal-500 focus:outline-none focus:border-teal-500 transition"
+            placeholder="Ask a question about the app, POSH, or FIR rules..."
+            className="flex-1 bg-cream/40 border border-black/10 rounded-full px-4 py-3 text-xs sm:text-sm font-medium text-cream-ink placeholder:text-cream-ink/50 focus:outline-none focus:border-magenta focus:bg-white transition"
           />
           <button
-            onClick={() => handleSendMessage()}
+            type="submit"
             disabled={!inputText.trim()}
-            className="p-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white transition disabled:opacity-40 shrink-0 shadow-md"
+            className="w-10 h-10 rounded-full bg-magenta text-bg-black font-bold flex items-center justify-center transition disabled:opacity-40 shrink-0 shadow-md"
           >
             <Send className="w-4 h-4" />
           </button>
-        </div>
+        </form>
 
       </div>
     </div>

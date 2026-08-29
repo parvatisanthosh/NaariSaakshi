@@ -42,6 +42,11 @@ export const App: React.FC = () => {
   const blurTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Scroll window to top whenever active tab or selected incident changes
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [activeTab, selectedIncident]);
+
+  useEffect(() => {
     // Load initial storage data
     const loadInitialData = async () => {
       const loadedSettings = StorageService.getSettings();
