@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Type, Sparkles, Paperclip, CheckCircle2, AlertCircle, Edit3, X, Trash2, ArrowRight, Check, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Type, Sparkles, Paperclip, CheckCircle2, AlertCircle, Edit3, X, Trash2, ArrowRight, Check, Loader2, MapPin, Camera, Info, HardDrive } from 'lucide-react';
 import { Attachment, CategoryType, Incident, PersonInvolved } from '../types';
 import { extractIncidentFromRawText } from '../aiEngine';
+import { CameraCaptureModal } from './CameraCaptureModal';
+import { StorageService } from '../storageService';
+import { contributeAnonymousSignal } from '../firebaseService';
 
 interface LogIncidentScreenProps {
   onSaveIncident: (incident: Incident) => void;
@@ -23,7 +26,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Attachment state
-  const [attachment, setAttachment] = useState<Attachment | null>(null);
+  const [attachmentsList, setAttachmentsList] = useState<Attachment[]>([]);
+  const [voiceAudioAttachment, setVoiceAudioAttachment] = useState<Attachment | null>(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [showMicExplainerModal, setShowMicExplainerModal] = useState(false);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const storageInfo = StorageService.getStorageUsageInfo();
 
   // Extracted Data for Confirmation Modal
   const [extractedData, setExtractedData] = useState<any | null>(null);
@@ -41,6 +51,73 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
   const [editActions, setEditActions] = useState<string[]>([]);
   const [editWitnesses, setEditWitnesses] = useState('');
   const [editSeverity, setEditSeverity] = useState<number>(3);
+
+  // Location capture state
+  const [locationOptIn, setLocationOptIn] = useState(false);
+  const [capturedCoords, setCapturedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isLocationDetected, setIsLocationDetected] = useState(false);
+  const [contributeSignalOptIn, setContributeSignalOptIn] = useState(false);
+
+  const fetchGeocodedAddress = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
+        headers: {
+          'Accept-Language': 'en'
+        }
+      });
+      if (!res.ok) throw new Error('Geocoding service error');
+      const data = await res.json();
+      if (data && data.address) {
+        const parts = [
+          data.address.amenity || data.address.building || data.address.office || data.address.shop,
+          data.address.road || data.address.pedestrian,
+          data.address.suburb || data.address.neighbourhood || data.address.quarter,
+          data.address.city || data.address.town || data.address.village
+        ].filter(Boolean);
+        if (parts.length > 0) return parts.join(', ');
+      }
+      return data?.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch (err) {
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  };
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Couldn't get your location — you can type it manually");
+      return;
+    }
+    setIsLocating(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setCapturedCoords({ lat, lng });
+        setLocationOptIn(true);
+        setIsLocationDetected(true);
+
+        const address = await fetchGeocodedAddress(lat, lng);
+        setEditLocation(address);
+        setIsLocating(false);
+      },
+      (err) => {
+        console.warn('Geolocation failed:', err);
+        setLocationError("Couldn't get your location — you can type it manually");
+        setIsLocating(false);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
+  const handleClearLocationOptIn = () => {
+    setLocationOptIn(false);
+    setCapturedCoords(null);
+    setIsLocationDetected(false);
+  };
 
   // Field Touched / Edited Tracking State
   const [touchedFields, setTouchedFields] = useState<{ [key: string]: boolean }>({});
@@ -104,11 +181,21 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
     setMode('text');
   };
 
+  const handleInitiateRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      setShowMicExplainerModal(true);
+    }
+  };
+
   const startRecording = async () => {
     try {
+      setShowMicExplainerModal(false);
       setRecordingSeconds(0);
       setIsRecording(true);
       setSpeechErrorMsg(null);
+      audioChunksRef.current = [];
 
       if (speechRecognitionRef.current) {
         try { 
@@ -129,6 +216,34 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          if (audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const audioBase64 = reader.result as string;
+              setVoiceAudioAttachment({
+                id: 'att-voice-' + Math.random().toString(36).substr(2, 6),
+                name: `Original_Voice_Recording_${new Date().toISOString().slice(0, 10)}.webm`,
+                type: 'audio',
+                dataUrl: audioBase64,
+                size: audioBlob.size,
+                uploadedAt: new Date().toISOString(),
+                isLiveCapture: true,
+                captureMethod: 'voice_recording'
+              });
+            };
+            reader.readAsDataURL(audioBlob);
+          }
+        };
+
         mediaRecorder.start();
       }
     } catch (err) {
@@ -169,16 +284,28 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
     const reader = new FileReader();
     reader.onload = () => {
-      setAttachment({
+      const newAtt: Attachment = {
         id: 'att-' + Math.random().toString(36).substr(2, 6),
         name: file.name,
         type: file.type.startsWith('image/') ? 'image' : 'document',
         dataUrl: reader.result as string,
         size: file.size,
-        uploadedAt: new Date().toISOString()
-      });
+        uploadedAt: new Date().toISOString(),
+        isLiveCapture: false,
+        captureMethod: 'upload'
+      };
+      setAttachmentsList(prev => [...prev, newAtt]);
     };
     reader.readAsDataURL(file);
+    if (e.target) e.target.value = '';
+  };
+
+  const handleAddCapturedPhoto = (newPhotoAtt: Attachment) => {
+    setAttachmentsList(prev => [...prev, newPhotoAtt]);
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setAttachmentsList(prev => prev.filter(a => a.id !== id));
   };
 
   // Run AI Structuring on raw text
@@ -231,6 +358,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       created_at: new Date().toISOString(),
       incident_datetime: new Date(editDatetime).toISOString(),
       location: editLocation || 'Unspecified location',
+      ...(locationOptIn && capturedCoords ? { latitude: capturedCoords.lat, longitude: capturedCoords.lng } : {}),
       people_involved: people,
       category: editCategory,
       narrative_raw: inputText,
@@ -243,15 +371,29 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       },
       witnesses: editWitnesses ? editWitnesses.split(',').map(w => w.trim()).filter(Boolean) : [],
       severity: editSeverity,
-      attachments: attachment ? [attachment] : [],
+      attachments: [
+        ...attachmentsList,
+        ...(voiceAudioAttachment ? [voiceAudioAttachment] : [])
+      ],
       user_edited: Object.keys(touchedFields).length > 0,
       tags: [editCategory, ...(people[0]?.name ? [people[0].name] : [])]
     };
+
+    if (contributeSignalOptIn && locationOptIn && capturedCoords) {
+      contributeAnonymousSignal(capturedCoords.lat, capturedCoords.lng, editCategory);
+    }
 
     onSaveIncident(newIncident);
   };
 
   const renderFieldBadge = (fieldName: string) => {
+    if (fieldName === 'location' && isLocationDetected && !touchedFields['location']) {
+      return (
+        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-950 text-teal-300 border border-teal-700/60 transition">
+          <span>📍 Detected</span>
+        </span>
+      );
+    }
     const isEdited = touchedFields[fieldName];
     if (isEdited) {
       return (
@@ -282,6 +424,56 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             <div className="space-y-1">
               <h3 className="text-base font-semibold text-charcoal-100">{processingMessage}</h3>
               <p className="text-xs text-charcoal-400">Extracting facts, dates, and people silently...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Storage Size Awareness Banner */}
+      {storageInfo.isLowStorage && (
+        <div className="bg-amber-950/90 border border-amber-500/60 rounded-xl p-3 text-xs text-amber-200 flex items-center space-x-2 shadow-md">
+          <HardDrive className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>You're running low on local storage ({storageInfo.usedMB} MB used) — consider exporting and clearing older entries.</span>
+        </div>
+      )}
+
+      {/* Camera Capture Modal */}
+      <CameraCaptureModal
+        isOpen={showCameraModal}
+        locationText={editLocation}
+        onCapture={handleAddCapturedPhoto}
+        onClose={() => setShowCameraModal(false)}
+        onFallbackToUpload={() => {
+          setSpeechErrorMsg("Camera access needed to take a photo — you can upload one instead");
+          fileInputRef.current?.click();
+        }}
+      />
+
+      {/* Microphone Explainer Modal */}
+      {showMicExplainerModal && (
+        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center space-x-3 text-teal-400">
+              <Mic className="w-6 h-6" />
+              <h3 className="text-base font-semibold text-charcoal-100">Microphone Access Needed</h3>
+            </div>
+            <p className="text-xs text-charcoal-300 leading-relaxed">
+              EvidenceHer needs microphone access to record audio and auto-transcribe it. Your audio stays private on your device.
+            </p>
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                onClick={() => setShowMicExplainerModal(false)}
+                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={startRecording}
+                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition shadow-md flex items-center justify-center space-x-1"
+              >
+                <Mic className="w-4 h-4" />
+                <span>Start Voice Recording</span>
+              </button>
             </div>
           </div>
         </div>
@@ -357,7 +549,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             {/* Pulsing Mic Button */}
             <button
               disabled={isProcessing}
-              onClick={isRecording ? stopRecording : startRecording}
+              onClick={handleInitiateRecording}
               className={`w-28 h-28 rounded-full flex items-center justify-center transition-all transform active:scale-95 border-4 shadow-xl disabled:opacity-50 ${
                 isRecording
                   ? 'bg-accent-rose text-white border-accent-rose/40 animate-pulse ring-8 ring-accent-rose/20'
@@ -431,30 +623,90 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         </div>
       )}
 
-      {/* Attachment Option */}
-      <div className="bg-charcoal-800/40 border border-charcoal-700/50 rounded-xl p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Paperclip className="w-5 h-5 text-charcoal-400" />
-          <div>
-            <span className="text-xs font-medium text-charcoal-200 block">Attach Evidence (Photo / Screenshot)</span>
-            <span className="text-[11px] text-charcoal-400">Stored safely on device</span>
+      {/* Evidentiary Attachment Options */}
+      <div className="bg-charcoal-800/40 border border-charcoal-700/50 rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2 text-xs font-semibold text-charcoal-200 uppercase tracking-wider">
+            <Paperclip className="w-4 h-4 text-teal-400" />
+            <span>Evidentiary Attachments</span>
           </div>
+          <span className="text-[10px] text-charcoal-400">Stored locally on device</span>
         </div>
 
-        <label className={`px-3 py-1.5 rounded-lg bg-charcoal-700 text-xs font-medium text-charcoal-200 transition ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-charcoal-600 cursor-pointer'}`}>
-          <span>{attachment ? 'Change File' : 'Browse'}</span>
-          <input type="file" disabled={isProcessing} accept="image/*,.pdf" onChange={handleFileUpload} className="hidden" />
-        </label>
-      </div>
-
-      {attachment && (
-        <div className="flex items-center justify-between bg-teal-950/30 border border-teal-500/30 rounded-xl p-3 text-xs">
-          <span className="text-teal-300 truncate max-w-[240px]">📎 {attachment.name}</span>
-          <button disabled={isProcessing} onClick={() => setAttachment(null)} className="text-charcoal-400 hover:text-accent-rose disabled:opacity-50">
-            <X className="w-4 h-4" />
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={isProcessing}
+            onClick={() => setShowCameraModal(true)}
+            className="px-3 py-2 rounded-xl bg-teal-950 hover:bg-teal-900 border border-teal-500/40 text-teal-300 text-xs font-medium flex items-center space-x-1.5 transition disabled:opacity-50"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Take Watermarked Photo</span>
           </button>
+
+          <label className={`px-3 py-2 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 text-xs font-medium flex items-center space-x-1.5 transition cursor-pointer ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <Paperclip className="w-3.5 h-3.5" />
+            <span>Upload File / Image</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              disabled={isProcessing}
+              accept="image/*,.pdf"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+          </label>
         </div>
-      )}
+
+        {/* List Attached Items */}
+        <div className="space-y-2 pt-1">
+          {voiceAudioAttachment && (
+            <div className="flex items-center justify-between bg-teal-950/40 border border-teal-500/40 rounded-xl p-3 text-xs">
+              <div className="flex items-center space-x-2 text-teal-300">
+                <Mic className="w-4 h-4 text-teal-400 shrink-0" />
+                <div className="truncate max-w-[240px]">
+                  <span className="font-semibold block">🎙️ Original Voice Recording</span>
+                  <span className="text-[10px] text-teal-400/80">Raw audio preserved alongside transcript</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={() => setVoiceAudioAttachment(null)}
+                className="text-charcoal-400 hover:text-accent-rose disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {attachmentsList.map((att) => (
+            <div key={att.id} className="flex items-center justify-between bg-charcoal-900/90 border border-charcoal-700 rounded-xl p-3 text-xs">
+              <div className="flex items-center space-x-2 truncate pr-2">
+                {att.isLiveCapture ? (
+                  <Camera className="w-4 h-4 text-teal-400 shrink-0" />
+                ) : (
+                  <Paperclip className="w-4 h-4 text-charcoal-400 shrink-0" />
+                )}
+                <div className="truncate">
+                  <span className="text-charcoal-200 font-medium block truncate">{att.name}</span>
+                  {att.isLiveCapture && (
+                    <span className="text-[10px] text-teal-400 font-mono">📷 Live Watermarked Photo</span>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={() => handleRemoveAttachment(att.id)}
+                className="text-charcoal-400 hover:text-accent-rose disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Action Buttons */}
       <div className="pt-2 flex items-center space-x-3">
@@ -534,17 +786,78 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     <label className="text-charcoal-300 font-medium">Location</label>
                     {renderFieldBadge('location')}
                   </div>
-                  <input
-                    type="text"
-                    value={editLocation}
-                    onChange={(e) => {
-                      setEditLocation(e.target.value);
-                      markTouched('location');
-                    }}
-                    className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                      touchedFields['location'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                    }`}
-                  />
+                  <div className="space-y-1.5">
+                    <input
+                      type="text"
+                      value={editLocation}
+                      onChange={(e) => {
+                        setEditLocation(e.target.value);
+                        markTouched('location');
+                      }}
+                      placeholder="e.g. 4th Floor Conference Room"
+                      className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
+                        touchedFields['location'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
+                      }`}
+                    />
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        onClick={handleGetLocation}
+                        disabled={isLocating}
+                        className="inline-flex items-center space-x-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-charcoal-900 hover:bg-charcoal-700 text-teal-400 border border-teal-500/30 transition disabled:opacity-50"
+                      >
+                        {isLocating ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Locating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <MapPin className="w-3 h-3" />
+                            <span>{locationOptIn ? '📍 Location Captured (Update)' : 'Use my current location'}</span>
+                          </>
+                        )}
+                      </button>
+
+                      {locationOptIn && (
+                        <button
+                          type="button"
+                          onClick={handleClearLocationOptIn}
+                          className="text-[10px] text-charcoal-400 hover:text-accent-rose transition"
+                        >
+                          Remove coordinates
+                        </button>
+                      )}
+                    </div>
+
+                    {locationError && (
+                      <p className="text-[11px] text-amber-400 mt-1 flex items-center space-x-1">
+                        <AlertCircle className="w-3 h-3 inline shrink-0 mr-1" />
+                        <span>{locationError}</span>
+                      </p>
+                    )}
+
+                    <p className="text-[10px] text-charcoal-400 leading-tight">
+                      Location is optional and only used to help you spot patterns — it's never shared unless you export a report.
+                    </p>
+
+                    {locationOptIn && capturedCoords && (
+                      <div className="bg-charcoal-900/90 border border-teal-500/30 p-2.5 rounded-xl space-y-1 mt-2">
+                        <label className="flex items-start space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={contributeSignalOptIn}
+                            onChange={(e) => setContributeSignalOptIn(e.target.checked)}
+                            className="mt-0.5 rounded bg-charcoal-800 border-charcoal-600 text-teal-600 focus:ring-teal-500 shrink-0"
+                          />
+                          <span className="text-[11px] text-teal-200/90 leading-snug">
+                            Anonymously contribute this incident's location and category to a shared safety signal for other users nearby. Your name, details, and identity are never included — only an anonymous count.
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>

@@ -6,6 +6,8 @@ export type ReportType = 'POSH' | 'POLICE' | 'PERSONAL';
 export interface ReportConfig {
   reportType: ReportType;
   complainantName: string;
+  complainantContact?: string;
+  complainantAddress?: string;
   respondentName?: string;
   organizationOrDept?: string;
   startDate?: string;
@@ -20,6 +22,8 @@ export function generateReportDocumentText(incidents: Incident[], config: Report
   const sorted = [...filtered].sort((a, b) => new Date(a.incident_datetime).getTime() - new Date(b.incident_datetime).getTime());
 
   const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const firstDate = sorted.length > 0 ? new Date(sorted[0].incident_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+  const lastDate = sorted.length > 0 ? new Date(sorted[sorted.length - 1].incident_datetime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
   if (config.reportType === 'POSH') {
     return `
@@ -79,44 +83,58 @@ Date: ${dateStr}
   } else if (config.reportType === 'POLICE') {
     return `
 DRAFT — FOR REVIEW BEFORE FILING. NOT LEGAL ADVICE.
-FORMAL COMPLAINT STATEMENT / EVIDENTIARY LOG
-FOR SUBMISSION TO LOCAL LAW ENFORCEMENT / LEGAL COUNSEL
+FORMAL WRITTEN COMPLAINT / INFORMATION FOR REGISTRATION OF FIR
+TO THE OFFICER-IN-CHARGE / COMPETENT LAW ENFORCEMENT AUTHORITY
 
-DATE OF LOG: ${dateStr}
-COMPLAINANT STATEMENT BY: ${config.complainantName || '[Full Name]'}
-PRIMARY INDIVIDUAL / ACCUSED: ${config.respondentName || '[Name / Description]'}
+DATE OF SUBMISSION: ${dateStr}
 
-SUBJECT: COMPLAINT REGARDING HARASSMENT, STALKING, AND/OR THREATS TO SAFETY
+1. COMPLAINANT DETAILS
+Full Name: ${config.complainantName || '[Complainant Full Name]'}
+Organization / Dept: ${config.organizationOrDept || '[Department / Company]'}
 
-STATEMENT OF FACTS:
-The undersigned hereby submits this detailed, timestamped chronicle of incidents occurring between ${config.startDate || 'the relevant period'} and ${config.endDate || dateStr}.
+2. ACCUSED / SUBJECT DETAILS
+Name of Accused: ${config.respondentName || '[Name / Description of Accused]'}
+Role / Relationship: ${config.organizationOrDept || '[Role / Relationship Details]'}
 
-INCIDENT LOGS RECORDED CONTEMPORANEOUSLY:
+3. CHRONOLOGICAL STATEMENT OF OFFENCES
+The undersigned hereby submits a factual chronicle of offences and unlawful conduct occurring between ${firstDate} and ${lastDate}.
 
 ${sorted.map((inc, index) => `
-[INCIDENT LOG ITEM ${index + 1}]
-Timestamp: ${new Date(inc.incident_datetime).toString()}
-Location / Venue: ${inc.location}
-Type of Offense/Conduct: ${inc.category}
-Accused / Parties: ${inc.people_involved.map(p => `${p.name} (${p.roleOrRelationship})`).join(', ')}
-
-Narrative & Facts:
-${inc.narrative_structured.summary}
-${inc.narrative_raw}
-
-Witnesses / Bystanders:
-${inc.witnesses.join(', ') || 'None listed'}
-
-Evidence Documents Attached:
-${inc.attachments.map(a => a.name).join(', ') || 'None'}
 --------------------------------------------------------------------------------
+OFFENCE LOG ENTRY #${index + 1}
+Date & Time of Offence: ${new Date(inc.incident_datetime).toLocaleString()}
+Place / Location: ${inc.location || 'Unspecified'}
+Category / Offence Type: ${inc.category}
+Accused / Parties Present: ${inc.people_involved.map(p => `${p.name} (${p.roleOrRelationship})`).join(', ') || 'None listed'}
+
+FACTUAL SUMMARY:
+${inc.narrative_structured.summary}
+
+SPECIFIC CONDUCT & ACTIONS:
+${inc.narrative_structured.keyActions.map(action => `• ${action}`).join('\n')}
+
+CONTEMPORANEOUS TRANSCRIPT:
+"${inc.narrative_raw}"
+
+WITNESSES PRESENT:
+${inc.witnesses.length > 0 ? inc.witnesses.map(w => `• ${w}`).join('\n') : 'None listed.'}
+
+EVIDENTIARY ATTACHMENTS:
+${inc.attachments.length > 0 ? inc.attachments.map(a => `• ${a.name} (${a.type})`).join('\n') : 'None attached.'}
 `).join('\n')}
 
-DECLARATION:
-All log entries were recorded promptly to preserve accurate recall of events. This record is made available for official investigation purposes.
+4. PRAYER & REQUEST FOR ACTION
+Complainant requests registration of a First Information Report under applicable law and further investigation.
 
-Declared at: ______________________
+VERIFICATION
+I state that the information provided above is true and correct to the best of my knowledge and memory.
+
+Signature of Complainant: ___________________________
 Date: ${dateStr}
+
+--------------------------------------------------------------------------------
+LEGAL NOTICE REGARDING ZERO FIR:
+Under current Indian law, any police station is required to register a 'Zero FIR' regardless of jurisdiction and transfer it to the appropriate station. You are entitled to a free copy of the FIR once registered — request it at the time of filing.
 `.trim();
   } else {
     // Personal record
@@ -383,6 +401,34 @@ export function downloadPdfReport(incidents: Incident[], config: ReportConfig): 
     doc.text(`Date: ${dateStr}`, leftMargin + 110, y);
   }
 
+  // Concluding Formal Statement for POLICE / FIR Draft
+  if (config.reportType === 'POLICE') {
+    checkPageBreak(40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('PRAYER & REQUEST FOR ACTION', leftMargin, y);
+    y += 6;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    const policeConcl = `Complainant requests registration of a First Information Report under applicable law and further investigation. All details recorded herein represent an accurate factual statement of offences to the best of my memory and records.`;
+    const policeLines = doc.splitTextToSize(policeConcl, contentWidth);
+    policeLines.forEach((line: string) => {
+      checkPageBreak(4.5);
+      doc.text(line, leftMargin, y);
+      y += 4.5;
+    });
+
+    y += 12;
+    checkPageBreak(25);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VERIFICATION & SIGNATURE', leftMargin, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.text('Signature of Complainant: ___________________________', leftMargin, y);
+    doc.text(`Date: ${dateStr}`, leftMargin + 110, y);
+  }
+
   // --- FOOTER & PAGE NUMBERS ON ALL PAGES ---
   const totalPages = (doc.internal as any).getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
@@ -400,12 +446,24 @@ export function downloadPdfReport(incidents: Incident[], config: ReportConfig): 
     }
 
     // Bottom Footer
+    if (config.reportType === 'POLICE') {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      const zeroFirText = "Notice: Under current Indian law, any police station is required to register a 'Zero FIR' regardless of jurisdiction and transfer it to the appropriate station. You are entitled to a free copy of the FIR once registered — request it at the time of filing.";
+      const zeroFirLines = doc.splitTextToSize(zeroFirText, contentWidth);
+      doc.text(zeroFirLines, leftMargin, pageHeight - 15);
+    }
+
     doc.setLineWidth(0.2);
     doc.setDrawColor(200, 200, 200);
-    doc.line(leftMargin, pageHeight - 12, pageWidth - rightMargin, pageHeight - 12);
+    doc.line(leftMargin, pageHeight - 9, pageWidth - rightMargin, pageHeight - 9);
 
-    doc.text(`EvidenceHer Private Log Report • Confidential`, leftMargin, pageHeight - 7);
-    doc.text(`Page ${i} of ${totalPages}`, pageWidth - rightMargin - 18, pageHeight - 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`EvidenceHer Private Log Report • Confidential`, leftMargin, pageHeight - 5);
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - rightMargin - 18, pageHeight - 5);
   }
 
   const fileName = `EvidenceHer_Report_${config.reportType}_${new Date().toISOString().slice(0, 10)}.pdf`;

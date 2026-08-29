@@ -20,6 +20,8 @@ export interface Attachment {
   dataUrl?: string; // Base64 data URL for images
   size?: number;
   uploadedAt: string;
+  isLiveCapture?: boolean;
+  captureMethod?: 'camera' | 'upload' | 'voice_recording';
 }
 
 export interface StructuredNarrative {
@@ -35,6 +37,8 @@ export interface Incident {
   created_at: string; // ISO String timestamp of entry creation
   incident_datetime: string; // ISO String or human readable datetime of when incident occurred
   location: string;
+  latitude?: number;
+  longitude?: number;
   people_involved: PersonInvolved[];
   category: CategoryType;
   narrative_raw: string;

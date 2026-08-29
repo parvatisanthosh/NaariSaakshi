@@ -6,6 +6,8 @@ export const INITIAL_SEED_INCIDENTS: Incident[] = [
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 42).toISOString(), // 6 weeks ago
     incident_datetime: new Date(Date.now() - 1000 * 60 * 60 * 24 * 42 - 1000 * 60 * 60 * 4).toISOString(),
     location: '4th Floor Conference Room B',
+    latitude: 12.9716,
+    longitude: 77.5946,
     people_involved: [
       { id: 'p-1', name: 'Rohan Sharma', roleOrRelationship: 'Engineering Manager' }
     ],
@@ -76,6 +78,8 @@ export const INITIAL_SEED_INCIDENTS: Incident[] = [
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 1 week ago
     incident_datetime: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7 - 1000 * 60 * 60 * 1).toISOString(),
     location: '4th Floor Pantry / Breakroom',
+    latitude: 12.9716,
+    longitude: 77.5946,
     people_involved: [
       { id: 'p-1', name: 'Rohan Sharma', roleOrRelationship: 'Engineering Manager' }
     ],
@@ -102,6 +106,8 @@ export const INITIAL_SEED_INCIDENTS: Incident[] = [
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
     incident_datetime: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2 - 1000 * 60 * 60 * 3).toISOString(),
     location: 'Office Parking Garage, Level B2',
+    latitude: 12.9725,
+    longitude: 77.5952,
     people_involved: [
       { id: 'p-2', name: 'Unknown Driver / White Sedan', roleOrRelationship: 'Unidentified Individual' }
     ],
@@ -314,6 +320,39 @@ export class StorageService {
   static async clearAllData(): Promise<Incident[]> {
     localStorage.removeItem(STORAGE_KEY_INCIDENTS);
     return [];
+  }
+
+  static async clearAllLocationData(): Promise<Incident[]> {
+    const incidents = await this.getIncidents();
+    const updated = incidents.map(inc => {
+      const { latitude, longitude, ...rest } = inc;
+      return rest;
+    });
+    await this.saveIncidents(updated);
+    return updated;
+  }
+
+  static getStorageUsageInfo(): { usedBytes: number; usedMB: number; isLowStorage: boolean } {
+    try {
+      let totalBytes = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('evidenceher')) {
+          const val = localStorage.getItem(key);
+          if (val) {
+            totalBytes += key.length + val.length;
+          }
+        }
+      }
+      const usedMB = totalBytes / (1024 * 1024);
+      return {
+        usedBytes: totalBytes,
+        usedMB: parseFloat(usedMB.toFixed(2)),
+        isLowStorage: usedMB >= 4.0
+      };
+    } catch {
+      return { usedBytes: 0, usedMB: 0, isLowStorage: false };
+    }
   }
 
   static getSettings(): AppSettings {

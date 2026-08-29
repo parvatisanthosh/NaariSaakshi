@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Incident } from '../types';
 import { ReportConfig, ReportType, downloadPdfReport, generateReportDocumentText } from '../reportEngine';
 
@@ -10,6 +10,8 @@ interface ReportScreenProps {
 export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
   const [reportType, setReportType] = useState<ReportType>('POSH');
   const [complainantName, setComplainantName] = useState('Ananya Sharma');
+  const [complainantContact, setComplainantContact] = useState('+91 98765 43210');
+  const [complainantAddress, setComplainantAddress] = useState('Bengaluru, Karnataka');
   const [respondentName, setRespondentName] = useState('Rohan Sharma');
   const [organizationOrDept, setOrganizationOrDept] = useState('Engineering Dept');
   
@@ -20,6 +22,43 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
+
+  const selectedIncidents = useMemo(() => {
+    return incidents.filter(i => selectedIds.includes(i.id));
+  }, [incidents, selectedIds]);
+
+  const checklistMissing = useMemo(() => {
+    const missing: string[] = [];
+    if (selectedIds.length === 0) return ['No incidents selected'];
+
+    if (!complainantName.trim()) {
+      missing.push("Complainant Name");
+    }
+
+    if (reportType === 'POSH') {
+      const hasRespondent = respondentName.trim() || selectedIncidents.some(i => i.people_involved.length > 0);
+      if (!hasRespondent) missing.push("Respondent Name / Role");
+
+      const missingLocation = selectedIncidents.some(i => !i.location || i.location === 'Unspecified location');
+      if (missingLocation) missing.push("Incident Location");
+
+      const hasWitnesses = selectedIncidents.some(i => i.witnesses.length > 0);
+      if (!hasWitnesses) missing.push("Witnesses");
+    } else if (reportType === 'POLICE') {
+      if (!complainantContact.trim()) missing.push("Complainant Contact Info");
+      
+      const hasAccused = respondentName.trim() || selectedIncidents.some(i => i.people_involved.length > 0);
+      if (!hasAccused) missing.push("Accused Name / Identifying Details");
+
+      const missingPlaceTime = selectedIncidents.some(i => !i.location || !i.incident_datetime);
+      if (missingPlaceTime) missing.push("Specific Date/Time/Place of Offence");
+
+      const hasEvidence = selectedIncidents.some(i => i.attachments.length > 0);
+      if (!hasEvidence) missing.push("Supporting Evidence / Attachments");
+    }
+
+    return missing;
+  }, [reportType, complainantName, complainantContact, respondentName, selectedIncidents, selectedIds]);
 
   const toggleSelectAll = () => {
     if (selectedIds.length === incidents.length) {
@@ -38,6 +77,8 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
   const config: ReportConfig = {
     reportType,
     complainantName,
+    complainantContact,
+    complainantAddress,
     respondentName,
     organizationOrDept,
     selectedIncidentIds: selectedIds,
@@ -157,7 +198,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
           </div>
 
           <div>
-            <label className="block text-charcoal-300 mb-1 font-medium">Respondent / Subject Person</label>
+            <label className="block text-charcoal-300 mb-1 font-medium">Respondent / Accused Person</label>
             <input
               type="text"
               value={respondentName}
@@ -168,15 +209,28 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
           </div>
         </div>
 
-        <div>
-          <label className="block text-charcoal-300 mb-1 font-medium">Department / Organization</label>
-          <input
-            type="text"
-            value={organizationOrDept}
-            onChange={(e) => setOrganizationOrDept(e.target.value)}
-            placeholder="e.g. Engineering & Product Team"
-            className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl p-2.5 text-charcoal-100 focus:outline-none focus:border-teal-500"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-charcoal-300 mb-1 font-medium">Department / Organization</label>
+            <input
+              type="text"
+              value={organizationOrDept}
+              onChange={(e) => setOrganizationOrDept(e.target.value)}
+              placeholder="e.g. Engineering & Product Team"
+              className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl p-2.5 text-charcoal-100 focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-charcoal-300 mb-1 font-medium">Complainant Contact / Phone</label>
+            <input
+              type="text"
+              value={complainantContact}
+              onChange={(e) => setComplainantContact(e.target.value)}
+              placeholder="e.g. +91 98765 43210"
+              className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl p-2.5 text-charcoal-100 focus:outline-none focus:border-teal-500"
+            />
+          </div>
         </div>
       </div>
 
@@ -226,6 +280,43 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
             );
           })}
         </div>
+      </div>
+
+      {/* 4. Pre-Export Checklist Banner */}
+      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-4 space-y-2 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-charcoal-300 uppercase tracking-wider flex items-center space-x-1.5">
+            <CheckSquare className="w-4 h-4 text-teal-400" />
+            <span>4. Pre-Export Requirements Checklist</span>
+          </span>
+          {checklistMissing.length === 0 ? (
+            <span className="text-[10px] text-teal-300 bg-teal-950 px-2 py-0.5 rounded-full border border-teal-800 font-semibold">
+              ✓ All Core Fields Complete
+            </span>
+          ) : (
+            <span className="text-[10px] text-amber-300 bg-amber-950 px-2.5 py-0.5 rounded-full border border-amber-800 font-semibold">
+              {checklistMissing.length} Field{checklistMissing.length > 1 ? 's' : ''} Recommended
+            </span>
+          )}
+        </div>
+
+        {checklistMissing.length > 0 ? (
+          <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 text-amber-200 space-y-1">
+            <p className="font-medium text-xs flex items-center space-x-1">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 inline mr-1" />
+              <span>
+                This report is missing: <strong className="text-amber-300 underline">{checklistMissing.join(', ')}</strong>.
+              </span>
+            </p>
+            <p className="text-[11px] text-amber-300/80 leading-relaxed pl-5">
+              You can still export, but adding these details may strengthen the complaint.
+            </p>
+          </div>
+        ) : (
+          <p className="text-charcoal-300 text-[11px] leading-relaxed">
+            All essential fields (complainant, respondent, dates, locations, and descriptions) required for {reportType === 'POSH' ? 'POSH Committee' : reportType === 'POLICE' ? 'Police Complaint' : 'Personal Record'} are present in your selected entries.
+          </p>
+        )}
       </div>
 
       {/* Action Buttons */}

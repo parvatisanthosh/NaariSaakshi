@@ -1,3 +1,5 @@
+@import 'leaflet/dist/leaflet.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,4 +28,34 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(13, 148, 136, 0.6);
+}
+
+/* Leaflet Dark Mode Customizations */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background-color: #1a1d24 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 12px !important;
+}
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.4 !important;
+}
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  padding: 6px !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #f87171 !important;
+}
+.leaflet-container {
+  background-color: #12151c !important;
+  font-family: inherit !important;
+  border-radius: 16px;
+  z-index: 10;
+}
+.custom-map-pin {
+  background: transparent;
+  border: none;
 }

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Calendar, MapPin, User, Users, Tag, Trash2, Edit3, Save, X, Paperclip, AlertOctagon, Check } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { ArrowLeft, Calendar, MapPin, User, Users, Tag, Trash2, Edit3, Save, X, Paperclip, AlertOctagon, Check, Mic, Camera, Plus, Clock } from 'lucide-react';
 import { CategoryType, Incident, Attachment } from '../types';
+import { CameraCaptureModal } from './CameraCaptureModal';
+import { calculatePoshDeadline } from '../poshDeadlineHelper';
 
 interface IncidentDetailScreenProps {
   incident: Incident;
+  allIncidents?: Incident[];
   onUpdate: (updated: Incident) => void;
   onDelete: (id: string) => void;
   onBack: () => void;
@@ -11,6 +14,7 @@ interface IncidentDetailScreenProps {
 
 export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
   incident,
+  allIncidents = [],
   onUpdate,
   onDelete,
   onBack
@@ -38,6 +42,51 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
   const [rawNotes, setRawNotes] = useState(incident.narrative_raw);
   const [severity, setSeverity] = useState<number>(incident.severity || 3);
 
+  // Attachments State
+  const [attachmentsList, setAttachmentsList] = useState<Attachment[]>(incident.attachments || []);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAddAttachment = (newAtt: Attachment) => {
+    const updatedList = [...attachmentsList, newAtt];
+    setAttachmentsList(updatedList);
+    onUpdate({
+      ...incident,
+      attachments: updatedList
+    });
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    const updatedList = attachmentsList.filter(a => a.id !== id);
+    setAttachmentsList(updatedList);
+    onUpdate({
+      ...incident,
+      attachments: updatedList
+    });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const newAtt: Attachment = {
+        id: 'att-' + Math.random().toString(36).substr(2, 6),
+        name: file.name,
+        type: file.type.startsWith('image/') ? 'image' : 'document',
+        dataUrl: reader.result as string,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        isLiveCapture: false,
+        captureMethod: 'upload'
+      };
+      handleAddAttachment(newAtt);
+    };
+    reader.readAsDataURL(file);
+    if (e.target) e.target.value = '';
+  };
+
   const handleSave = () => {
     const updated: Incident = {
       ...incident,
@@ -57,6 +106,7 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
       },
       witnesses: witnessesText ? witnessesText.split(',').map(w => w.trim()).filter(Boolean) : [],
       severity,
+      attachments: attachmentsList,
       user_edited: true
     };
 
@@ -66,6 +116,17 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
+      
+      {/* Camera Capture Modal for Adding Evidence */}
+      <CameraCaptureModal
+        isOpen={showCameraModal}
+        locationText={incident.location}
+        onCapture={handleAddAttachment}
+        onClose={() => setShowCameraModal(false)}
+        onFallbackToUpload={() => {
+          fileInputRef.current?.click();
+        }}
+      />
       
       {/* Top Header Controls */}
       <div className="flex items-center justify-between border-b border-charcoal-800 pb-4">
@@ -124,6 +185,25 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
               </span>
             </div>
 
+            {/* POSH Filing Deadline Guidance Box */}
+            {(() => {
+              const poshInfo = calculatePoshDeadline(incident, allIncidents);
+              return (
+                <div className="bg-charcoal-900/80 border border-charcoal-700/80 p-3.5 rounded-xl space-y-1 text-xs">
+                  <div className="flex items-center space-x-1.5 text-teal-400 font-medium">
+                    <Clock className="w-4 h-4 shrink-0" />
+                    <span>{poshInfo.displayText}</span>
+                    {poshInfo.isSeries && (
+                      <span className="text-[10px] text-teal-300 font-mono">(calculated from latest in series)</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-charcoal-400 leading-relaxed">
+                    General guidance based on the POSH Act, 2013 — confirm current deadlines with your organization's ICC or a legal professional, as processes can vary. General informational guidance only — not legal advice.
+                  </p>
+                </div>
+              );
+            })()}
+
             {/* Structured Fields Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="bg-charcoal-900/60 p-3 rounded-xl border border-charcoal-700/50 space-y-1">
@@ -177,31 +257,116 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
               </ul>
             </div>
 
+            {/* Audio Attachments / Raw Voice Evidence */}
+            {attachmentsList.some(a => a.type === 'audio' || a.captureMethod === 'voice_recording') && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-teal-400 uppercase tracking-wider flex items-center space-x-1.5">
+                    <Mic className="w-4 h-4 text-teal-400" />
+                    <span>🎙️ Original Voice Recording (Raw Evidence)</span>
+                  </h3>
+                  <span className="text-[10px] bg-teal-950 text-teal-300 px-2 py-0.5 rounded border border-teal-800 font-medium">
+                    Unedited Audio
+                  </span>
+                </div>
+                {attachmentsList.filter(a => a.type === 'audio' || a.captureMethod === 'voice_recording').map(att => (
+                  <div key={att.id} className="bg-charcoal-900/90 p-3.5 rounded-xl border border-teal-500/40 space-y-2">
+                    <div className="flex items-center justify-between text-xs text-charcoal-300">
+                      <span className="font-medium text-teal-200">{att.name}</span>
+                      <span className="text-[10px] text-charcoal-400 font-mono">
+                        {att.size ? `${(att.size / 1024).toFixed(0)} KB` : 'Audio'}
+                      </span>
+                    </div>
+                    {att.dataUrl && (
+                      <audio controls src={att.dataUrl} className="w-full h-10 rounded-lg" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Original Raw Notes / Audio Transcript */}
             <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider">Original Raw Input / Transcript</h3>
+              <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider flex items-center space-x-1.5">
+                <span>📝 AI-Generated Transcript / Raw Notes</span>
+              </h3>
               <p className="text-xs text-charcoal-300 bg-charcoal-900/80 p-3 rounded-xl border border-charcoal-700/60 italic leading-relaxed whitespace-pre-wrap">
                 "{incident.narrative_raw}"
               </p>
             </div>
 
-            {/* Attachments */}
-            {incident.attachments.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider">Attached Evidence</h3>
+            {/* Attachments Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-t border-charcoal-700/60 pt-4">
+                <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider flex items-center space-x-1.5">
+                  <Paperclip className="w-4 h-4 text-teal-400" />
+                  <span>Attached Evidence ({attachmentsList.length})</span>
+                </h3>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowCameraModal(true)}
+                    className="px-2.5 py-1.5 rounded-lg bg-teal-950 hover:bg-teal-900 border border-teal-500/40 text-teal-300 text-[11px] font-medium flex items-center space-x-1 transition"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Take Photo</span>
+                  </button>
+
+                  <label className="px-2.5 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700 text-charcoal-200 text-[11px] font-medium flex items-center space-x-1 transition cursor-pointer">
+                    <Plus className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Add File</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {attachmentsList.length === 0 ? (
+                <p className="text-xs text-charcoal-400 italic">No attachments added yet.</p>
+              ) : (
                 <div className="space-y-2">
-                  {incident.attachments.map(att => (
-                    <div key={att.id} className="bg-charcoal-900/80 p-3 rounded-xl border border-charcoal-700 flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-xs">
-                        <Paperclip className="w-4 h-4 text-teal-400" />
-                        <span className="text-charcoal-200 font-medium">{att.name}</span>
+                  {attachmentsList.map(att => (
+                    <div key={att.id} className="bg-charcoal-900/90 p-3 rounded-xl border border-charcoal-700/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-xs">
+                          {att.type === 'audio' ? (
+                            <Mic className="w-4 h-4 text-teal-400 shrink-0" />
+                          ) : att.isLiveCapture || att.captureMethod === 'camera' ? (
+                            <Camera className="w-4 h-4 text-teal-400 shrink-0" />
+                          ) : (
+                            <Paperclip className="w-4 h-4 text-charcoal-400 shrink-0" />
+                          )}
+                          <div className="truncate">
+                            <span className="text-charcoal-200 font-medium block truncate">{att.name}</span>
+                            {att.isLiveCapture && (
+                              <span className="text-[10px] text-teal-400 font-mono">📷 Live Watermarked Photo</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleRemoveAttachment(att.id)}
+                          className="text-charcoal-400 hover:text-accent-rose text-xs transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <span className="text-[10px] text-charcoal-400 uppercase font-mono">{att.type}</span>
+
+                      {att.type === 'image' && att.dataUrl && (
+                        <div className="mt-2 max-w-sm rounded-lg overflow-hidden border border-charcoal-700">
+                          <img src={att.dataUrl} alt={att.name} className="w-full h-auto max-h-48 object-cover" />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
           </div>
         ) : (

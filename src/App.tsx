@@ -193,6 +193,11 @@ export const App: React.FC = () => {
     setSelectedIncident(null);
   };
 
+  const handleClearLocationData = async () => {
+    const updated = await StorageService.clearAllLocationData();
+    setIncidents(updated);
+  };
+
   const handleImportData = async (imported: Incident[]) => {
     await StorageService.saveIncidents(imported);
     setIncidents(imported);
@@ -260,6 +265,7 @@ export const App: React.FC = () => {
         {selectedIncident ? (
           <IncidentDetailScreen
             incident={selectedIncident}
+            allIncidents={incidents}
             onUpdate={handleUpdateIncident}
             onDelete={handleDeleteIncident}
             onBack={() => setSelectedIncident(null)}
@@ -301,6 +307,7 @@ export const App: React.FC = () => {
                 incidents={incidents}
                 onResetSeedData={handleResetSeedData}
                 onClearAllData={handleClearAllData}
+                onClearLocationData={handleClearLocationData}
                 onImportData={handleImportData}
               />
             )}

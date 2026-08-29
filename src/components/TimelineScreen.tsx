@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter, ShieldCheck, Heart } from 'lucide-react';
+import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter, ShieldCheck, Heart, Clock } from 'lucide-react';
 import { Incident, CategoryType } from '../types';
 import { analyzeIncidentPatterns } from '../aiEngine';
+import { calculatePoshDeadline } from '../poshDeadlineHelper';
 
 interface TimelineScreenProps {
   incidents: Incident[];
@@ -194,6 +195,8 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
               minute: '2-digit'
             });
 
+            const poshInfo = calculatePoshDeadline(incident, incidents);
+
             return (
               <div
                 key={incident.id}
@@ -239,6 +242,20 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                       <span>{incident.attachments.length} attachment</span>
                     </div>
                   )}
+                </div>
+
+                {/* POSH Filing Window Indicator */}
+                <div className="pt-2 border-t border-charcoal-700/50 space-y-0.5 text-[11px]">
+                  <div className="flex items-center space-x-1.5 text-charcoal-400">
+                    <Clock className="w-3 h-3 text-teal-400 shrink-0" />
+                    <span className="font-medium text-charcoal-300">{poshInfo.displayText}</span>
+                    {poshInfo.isSeries && (
+                      <span className="text-[10px] text-teal-400/90 font-mono">(calculated from latest in series)</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-charcoal-400 leading-tight">
+                    General guidance based on POSH Act, 2013 — confirm current deadlines with your organization's ICC or legal professional.
+                  </p>
                 </div>
 
               </div>

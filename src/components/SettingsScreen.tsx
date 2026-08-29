@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe } from 'lucide-react';
 import { AppSettings, Incident } from '../types';
 
 interface SettingsScreenProps {
@@ -8,6 +8,7 @@ interface SettingsScreenProps {
   incidents: Incident[];
   onResetSeedData: () => void;
   onClearAllData: () => void;
+  onClearLocationData: () => void;
   onImportData: (imported: Incident[]) => void;
 }
 
@@ -17,6 +18,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   incidents,
   onResetSeedData,
   onClearAllData,
+  onClearLocationData,
   onImportData
 }) => {
   const [pinInput, setPinInput] = useState(settings.pinCode || '');
@@ -237,6 +239,58 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <input type="file" accept=".json" onChange={handleImportJsonFile} className="hidden" />
           </label>
         </div>
+
+        <div className="pt-3 border-t border-charcoal-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span className="font-semibold text-charcoal-200 block">Clear Location Coordinates</span>
+            <span className="text-[11px] text-charcoal-400">Strips GPS coordinates from all incidents while keeping text addresses intact.</span>
+          </div>
+          <button
+            onClick={() => {
+              onClearLocationData();
+              showNotice('Cleared all raw location coordinates from stored entries.');
+            }}
+            className="px-3 py-2 bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-amber-300 rounded-xl font-medium flex items-center justify-center space-x-1.5 transition text-xs shrink-0"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Clear Location Data</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Community Safety Signal Privacy Explainer Card */}
+      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-3 text-xs">
+        <div className="flex items-center space-x-2 text-cyan-400 font-semibold uppercase tracking-wider">
+          <Globe className="w-4 h-4" />
+          <span>Community Safety Signals & Privacy</span>
+        </div>
+        
+        <p className="text-charcoal-300 leading-relaxed">
+          When logging an entry with location, you can choose per incident to anonymously contribute to a shared safety signal map for nearby users.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div className="bg-charcoal-900/80 p-3 rounded-xl border border-teal-500/30 space-y-1">
+            <span className="font-semibold text-teal-300 block">✓ What IS Shared (When Opted In)</span>
+            <ul className="text-charcoal-300 text-[11px] space-y-0.5">
+              <li>• Rounded ~100m grid cell count (+1)</li>
+              <li>• Broad incident category (e.g. Verbal)</li>
+            </ul>
+          </div>
+
+          <div className="bg-charcoal-900/80 p-3 rounded-xl border border-rose-500/30 space-y-1">
+            <span className="font-semibold text-rose-300 block">✕ What IS NEVER Shared</span>
+            <ul className="text-charcoal-300 text-[11px] space-y-0.5">
+              <li>• Names, people involved, witnesses</li>
+              <li>• Raw narratives or summary text</li>
+              <li>• User ID or device fingerprint</li>
+            </ul>
+          </div>
+        </div>
+
+        <p className="text-[11px] text-charcoal-400 italic">
+          "This shows how many people have anonymously reported something nearby — never who, never what happened. It's a safety signal, not a search tool."
+        </p>
       </div>
 
       {/* Demo Reset / Danger Zone */}

@@ -1,7 +1,10 @@
-import React, { useMemo } from 'react';
-import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2 } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2, Globe } from 'lucide-react';
+import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { Incident } from '../types';
 import { analyzeIncidentPatterns } from '../aiEngine';
+import { fetchNearbyCommunitySignals, CommunitySignalCell } from '../firebaseService';
 
 interface PatternsScreenProps {
   incidents: Incident[];
@@ -9,12 +12,88 @@ interface PatternsScreenProps {
   onGenerateReport: () => void;
 }
 
+const createCustomPinIcon = (count: number) => {
+  let size = 28;
+  let bgColor = '#0f766e'; // teal-700
+  let borderColor = '#2dd4bf'; // teal-400
+  let fontSize = '11px';
+
+  if (count === 2) {
+    size = 34;
+    bgColor = '#b45309'; // amber-700
+    borderColor = '#f59e0b'; // amber-500
+    fontSize = '12px';
+  } else if (count >= 3) {
+    size = 40;
+    bgColor = '#9f1239'; // rose-800
+    borderColor = '#f43f5e'; // rose-500
+    fontSize = '13px';
+  }
+
+  return L.divIcon({
+    className: 'custom-map-pin',
+    html: `<div style="
+      width: ${size}px;
+      height: ${size}px;
+      background-color: ${bgColor};
+      border: 2px solid ${borderColor};
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: ${fontSize};
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      font-family: system-ui, -apple-system, sans-serif;
+    ">${count}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+};
+
 export const PatternsScreen: React.FC<PatternsScreenProps> = ({
   incidents,
   onSelectIncident,
   onGenerateReport
 }) => {
   const analysis = useMemo(() => analyzeIncidentPatterns(incidents), [incidents]);
+
+  const locationGroups = useMemo(() => {
+    const groups: { [key: string]: { lat: number; lng: number; incidents: Incident[]; locationName: string } } = {};
+    
+    incidents.forEach(inc => {
+      if (typeof inc.latitude === 'number' && typeof inc.longitude === 'number' && !isNaN(inc.latitude) && !isNaN(inc.longitude)) {
+        const key = `${inc.latitude.toFixed(4)},${inc.longitude.toFixed(4)}`;
+        if (!groups[key]) {
+          groups[key] = {
+            lat: inc.latitude,
+            lng: inc.longitude,
+            incidents: [],
+            locationName: inc.location
+          };
+        }
+        groups[key].incidents.push(inc);
+      }
+    });
+
+    return Object.values(groups);
+  }, [incidents]);
+
+  const [communitySignals, setCommunitySignals] = useState<CommunitySignalCell[]>([]);
+
+  const userLocations = useMemo(() => {
+    return locationGroups.map(g => ({ lat: g.lat, lng: g.lng }));
+  }, [locationGroups]);
+
+  useEffect(() => {
+    if (userLocations.length > 0) {
+      fetchNearbyCommunitySignals(userLocations).then(signals => {
+        setCommunitySignals(signals);
+      });
+    }
+  }, [userLocations]);
 
   const getRiskBadgeColor = (level: string) => {
     switch (level) {
@@ -115,28 +194,148 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
         )}
       </div>
 
-      {/* Cluster Groupings: By Location */}
+      {/* Location Hotspots Section */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider">Grouped by Location</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider flex items-center space-x-1.5">
+            <MapPin className="w-4 h-4 text-teal-400" />
+            <span>Location Hotspots</span>
+          </h3>
+          {locationGroups.length > 0 && (
+            <span className="text-[11px] text-teal-300 bg-teal-950 px-2.5 py-0.5 rounded-full border border-teal-800 font-medium">
+              {locationGroups.length} Hotspot Location{locationGroups.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
         
-        {analysis.clusters.filter(c => c.type === 'location').length === 0 ? (
-          <div className="bg-charcoal-800/30 border border-charcoal-700/50 rounded-xl p-4 text-xs text-charcoal-400">
-            No repeated location clusters detected yet.
+        {locationGroups.length === 0 ? (
+          <div className="bg-charcoal-800/40 border border-charcoal-700/60 rounded-2xl p-8 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-charcoal-700/60 border border-charcoal-600 flex items-center justify-center text-charcoal-400 mx-auto">
+              <MapPin className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-semibold text-charcoal-200">No Location Coordinates Recorded</h4>
+            <p className="text-xs text-charcoal-400 max-w-md mx-auto leading-relaxed">
+              Location patterns will appear here once you add location data to your entries.
+            </p>
           </div>
         ) : (
-          analysis.clusters.filter(c => c.type === 'location').map((cluster, i) => (
-            <div key={i} className="bg-charcoal-800/90 border border-charcoal-700 rounded-2xl p-4 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-teal-400" />
-                  <span className="font-semibold text-charcoal-100">{cluster.key}</span>
-                </div>
-                <span className="text-xs font-semibold text-teal-300 bg-teal-950 px-2 py-0.5 rounded-full border border-teal-800">
-                  {cluster.count} Incidents
-                </span>
+          <div className="bg-charcoal-800/80 border border-charcoal-700 rounded-2xl p-3 space-y-2 shadow-lg">
+            <div className="h-72 w-full rounded-xl overflow-hidden relative border border-charcoal-700/80">
+              <MapContainer
+                center={[locationGroups[0].lat, locationGroups[0].lng]}
+                zoom={14}
+                scrollWheelZoom={false}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                />
+
+                {/* Community Signal Layer (Anonymous, Aggregated) */}
+                {communitySignals.map((signal, sIdx) => (
+                  <Circle
+                    key={`signal-${sIdx}`}
+                    center={[signal.lat, signal.lng]}
+                    radius={120 + Math.min(signal.count * 30, 200)}
+                    pathOptions={{
+                      color: '#06b6d4',
+                      fillColor: '#0891b2',
+                      fillOpacity: 0.25,
+                      weight: 2,
+                      dashArray: '4, 4'
+                    }}
+                  >
+                    <Popup>
+                      <div className="space-y-2 text-xs max-w-xs">
+                        <div className="border-b border-charcoal-700 pb-1 flex items-center justify-between">
+                          <span className="font-bold text-cyan-300 text-xs flex items-center space-x-1">
+                            <Globe className="w-3.5 h-3.5 text-cyan-400 inline mr-1" />
+                            <span>Community Signal (Anonymous)</span>
+                          </span>
+                        </div>
+                        <p className="text-charcoal-200 font-semibold">
+                          {signal.count} anonymous report{signal.count > 1 ? 's' : ''} in this grid area (~100m)
+                        </p>
+                        <div className="bg-charcoal-900/90 p-2 rounded-lg border border-charcoal-700 space-y-1 text-[11px]">
+                          <span className="font-medium text-charcoal-400 block uppercase text-[10px]">
+                            Category Breakdown:
+                          </span>
+                          <div className="grid grid-cols-2 gap-1 text-charcoal-300 text-[10px]">
+                            {signal.categoryBreakdown.verbal > 0 && <span>• Verbal: {signal.categoryBreakdown.verbal}</span>}
+                            {signal.categoryBreakdown.physical > 0 && <span>• Physical: {signal.categoryBreakdown.physical}</span>}
+                            {signal.categoryBreakdown.digital > 0 && <span>• Digital: {signal.categoryBreakdown.digital}</span>}
+                            {signal.categoryBreakdown.stalking > 0 && <span>• Stalking: {signal.categoryBreakdown.stalking}</span>}
+                            {signal.categoryBreakdown.quid_pro_quo > 0 && <span>• Quid Pro Quo: {signal.categoryBreakdown.quid_pro_quo}</span>}
+                            {signal.categoryBreakdown.other > 0 && <span>• Other: {signal.categoryBreakdown.other}</span>}
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-charcoal-400 italic border-t border-charcoal-700/50 pt-1 leading-snug">
+                          No names or details are ever stored or accessible.
+                        </p>
+                      </div>
+                    </Popup>
+                  </Circle>
+                ))}
+
+                {locationGroups.map((group, idx) => (
+                  <Marker
+                    key={idx}
+                    position={[group.lat, group.lng]}
+                    icon={createCustomPinIcon(group.incidents.length)}
+                  >
+                    <Popup>
+                      <div className="space-y-2 text-xs max-w-xs">
+                        <div className="border-b border-charcoal-700 pb-1.5 flex items-center justify-between gap-2">
+                          <span className="font-bold text-teal-300 text-xs truncate">
+                            📍 {group.locationName || 'Saved Location'}
+                          </span>
+                          <span className="text-[10px] bg-teal-950 px-1.5 py-0.5 rounded text-teal-300 border border-teal-800 shrink-0 font-semibold">
+                            {group.incidents.length} incident{group.incidents.length > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                          {group.incidents.map((inc) => (
+                            <div
+                              key={inc.id}
+                              onClick={() => onSelectIncident(inc)}
+                              className="p-2 bg-charcoal-800 hover:bg-charcoal-700 rounded-lg border border-charcoal-700/60 cursor-pointer transition text-[11px] group"
+                            >
+                              <div className="flex items-center justify-between text-charcoal-400 text-[10px] mb-0.5">
+                                <span>{new Date(inc.incident_datetime).toLocaleDateString()}</span>
+                                <span className="text-teal-400 font-semibold">[{inc.category}]</span>
+                              </div>
+                              <p className="text-charcoal-100 font-medium line-clamp-2">
+                                {inc.narrative_structured.summary}
+                              </p>
+                              <div className="flex items-center space-x-1 text-teal-400 text-[10px] mt-1 group-hover:text-teal-300 font-medium">
+                                <span>Open incident detail</span>
+                                <ChevronRight className="w-3 h-3" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-charcoal-300 pt-2 border-t border-charcoal-700/50">
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded-full bg-teal-600 border border-teal-400"></div>
+                <span>Your Personal Incident Pins</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded-full bg-cyan-600/40 border border-cyan-400 border-dashed"></div>
+                <span>Community signal (anonymous, aggregated)</span>
               </div>
             </div>
-          ))
+
+            <p className="text-[11px] text-charcoal-400 text-center leading-relaxed">
+              This shows how many people have anonymously reported something nearby — never who, never what happened. It's a safety signal, not a search tool.
+            </p>
+          </div>
         )}
       </div>
 
