@@ -121,7 +121,7 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 pb-28 space-y-6">
+    <div className="w-full space-y-8 pb-28 relative">
       
       {showCameraModal && (
         <CameraCaptureModal
@@ -137,37 +137,37 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
       )}
 
       {/* Top Header Controls */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="flex items-center justify-between border-b border-black/10 pb-4">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-xs font-semibold text-text-muted hover:text-text-light transition"
+          className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-cream-ink hover:text-magenta transition"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Timeline</span>
         </button>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           {!isEditing ? (
             <>
               <button
                 onClick={() => setIsEditing(true)}
-                className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-xs font-semibold text-magenta border border-magenta/40 transition flex items-center space-x-1.5"
+                className="px-5 py-2 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md flex items-center space-x-1.5"
               >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Entry</span>
+                <Edit3 className="w-4 h-4" />
+                <span>EDIT ENTRY</span>
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-magenta/20 text-xs font-semibold text-magenta border border-white/10 transition flex items-center space-x-1.5"
+                className="px-5 py-2 rounded-full border-2 border-magenta/60 text-magenta hover:bg-magenta hover:text-bg-black font-display font-bold text-base tracking-wider transition flex items-center space-x-1.5 shadow-sm"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete</span>
+                <Trash2 className="w-4 h-4" />
+                <span>DELETE</span>
               </button>
             </>
           ) : (
             <button
               onClick={() => setIsEditing(false)}
-              className="px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-xs font-semibold text-text-muted border border-white/10 transition"
+              className="px-5 py-2 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
             >
               Cancel Edit
             </button>
@@ -175,80 +175,80 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
         </div>
       </div>
 
-      {/* Main Card View / Edit */}
-      <div className="bg-bg-black border border-white/10 rounded-2xl p-6 space-y-6 shadow-md film-grain">
+      {/* Main Container View / Edit (Light Cream & White Cards) */}
+      <div className="bg-cream text-cream-ink border border-black/10 rounded-3xl p-8 sm:p-12 space-y-8 shadow-2xl relative z-10 w-full">
         
         {!isEditing ? (
           /* READ-ONLY VIEW */
-          <div className="space-y-6">
+          <div className="space-y-8">
             
-            {/* Header Badge & Date */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
-              <div>
-                <span className="text-xs text-text-muted/60 font-mono">RECORD ID: {incident.id}</span>
-                <h2 className="font-display text-2xl tracking-wide text-text-light mt-1">{incident.narrative_structured.summary}</h2>
+            {/* Header Badge & Title */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/10 pb-6">
+              <div className="space-y-1">
+                <span className="text-xs font-mono font-bold text-cream-ink/60 uppercase">RECORD ID: {incident.id}</span>
+                <h1 className="font-display text-4xl sm:text-6xl text-cream-ink tracking-wide leading-none">{incident.narrative_structured.summary}</h1>
               </div>
-              <span className="px-3.5 py-1 rounded-full text-xs font-semibold bg-white/5 text-magenta border border-magenta/40">
+              <span className="px-5 py-2 rounded-full font-display text-lg font-bold tracking-wider bg-magenta text-bg-black shadow-md uppercase shrink-0">
                 {incident.category}
               </span>
             </div>
 
             {/* POSH Filing Window Indicator Card */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1 text-xs">
-              <div className="flex items-center space-x-2 text-magenta font-semibold">
-                <Clock className="w-4 h-4" />
-                <span>POSH Filing Window Guidance</span>
+            <div className="bg-white border border-black/10 rounded-2xl p-5 space-y-1 text-sm shadow-md">
+              <div className="flex items-center space-x-2 text-magenta font-bold">
+                <Clock className="w-5 h-5" />
+                <span className="font-display text-xl uppercase tracking-wider text-cream-ink">POSH FILING WINDOW GUIDANCE</span>
               </div>
-              <p className="text-text-light font-medium">{poshInfo.displayText}</p>
+              <p className="text-cream-ink/90 font-medium text-base">{poshInfo.displayText}</p>
             </div>
 
             {/* Structured Fields Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-1">
-                <span className="text-text-muted font-medium flex items-center space-x-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-magenta" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+              <div className="bg-white p-5 rounded-2xl border border-black/10 space-y-1 shadow-sm">
+                <span className="text-cream-ink/60 font-bold uppercase tracking-wider text-xs flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-magenta" />
                   <span>Date & Time</span>
                 </span>
-                <p className="text-text-light font-semibold">
+                <p className="text-cream-ink font-bold text-base">
                   {new Date(incident.incident_datetime).toLocaleString()}
                 </p>
               </div>
 
-              <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-1">
-                <span className="text-text-muted font-medium flex items-center space-x-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-magenta" />
+              <div className="bg-white p-5 rounded-2xl border border-black/10 space-y-1 shadow-sm">
+                <span className="text-cream-ink/60 font-bold uppercase tracking-wider text-xs flex items-center space-x-2">
+                  <MapPin className="w-4 h-4 text-magenta" />
                   <span>Location</span>
                 </span>
-                <p className="text-text-light font-semibold">{incident.location || 'Unspecified'}</p>
+                <p className="text-cream-ink font-bold text-base">{incident.location || 'Unspecified'}</p>
               </div>
 
-              <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-1">
-                <span className="text-text-muted font-medium flex items-center space-x-1.5">
-                  <User className="w-3.5 h-3.5 text-magenta" />
+              <div className="bg-white p-5 rounded-2xl border border-black/10 space-y-1 shadow-sm">
+                <span className="text-cream-ink/60 font-bold uppercase tracking-wider text-xs flex items-center space-x-2">
+                  <User className="w-4 h-4 text-magenta" />
                   <span>Person Involved</span>
                 </span>
-                <p className="text-text-light font-semibold">
+                <p className="text-cream-ink font-bold text-base">
                   {incident.people_involved.map(p => `${p.name} (${p.roleOrRelationship})`).join(', ') || 'None listed'}
                 </p>
               </div>
 
-              <div className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-1">
-                <span className="text-text-muted font-medium flex items-center space-x-1.5">
-                  <Users className="w-3.5 h-3.5 text-magenta" />
+              <div className="bg-white p-5 rounded-2xl border border-black/10 space-y-1 shadow-sm">
+                <span className="text-cream-ink/60 font-bold uppercase tracking-wider text-xs flex items-center space-x-2">
+                  <Users className="w-4 h-4 text-magenta" />
                   <span>Witnesses</span>
                 </span>
-                <p className="text-text-light font-semibold">
+                <p className="text-cream-ink font-bold text-base">
                   {incident.witnesses.length > 0 ? incident.witnesses.join(', ') : 'No witnesses listed'}
                 </p>
               </div>
             </div>
 
             {/* Key Facts / Actions */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-display tracking-wider text-magenta uppercase">Key Specific Actions</h3>
-              <ul className="space-y-1.5">
+            <div className="space-y-3">
+              <h3 className="font-display text-2xl tracking-wider text-cream-ink uppercase">KEY SPECIFIC ACTIONS</h3>
+              <ul className="space-y-2">
                 {incident.narrative_structured.keyActions.map((action, idx) => (
-                  <li key={idx} className="text-xs text-text-light bg-white/5 p-3 rounded-xl border border-white/5 leading-relaxed">
+                  <li key={idx} className="text-sm sm:text-base text-cream-ink bg-white p-4 rounded-2xl border border-black/10 font-medium leading-relaxed shadow-sm">
                     • {action}
                   </li>
                 ))}
@@ -257,26 +257,26 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
 
             {/* Audio Attachments / Raw Voice Evidence */}
             {attachmentsList.some(a => a.type === 'audio' || a.captureMethod === 'voice_recording') && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold text-teal-400 uppercase tracking-wider flex items-center space-x-1.5">
-                    <Mic className="w-4 h-4 text-teal-400" />
-                    <span>🎙️ Original Voice Recording (Raw Evidence)</span>
+                  <h3 className="font-display text-2xl tracking-wider text-cream-ink uppercase flex items-center space-x-2">
+                    <Mic className="w-5 h-5 text-magenta" />
+                    <span>🎙️ ORIGINAL VOICE RECORDING (RAW EVIDENCE)</span>
                   </h3>
-                  <span className="text-[10px] bg-teal-950 text-teal-300 px-2 py-0.5 rounded border border-teal-800 font-medium">
+                  <span className="text-xs bg-magenta text-bg-black px-3 py-1 rounded-full font-bold uppercase tracking-wider">
                     Unedited Audio
                   </span>
                 </div>
                 {attachmentsList.filter(a => a.type === 'audio' || a.captureMethod === 'voice_recording').map(att => (
-                  <div key={att.id} className="bg-charcoal-900/90 p-3.5 rounded-xl border border-teal-500/40 space-y-2">
-                    <div className="flex items-center justify-between text-xs text-charcoal-300">
-                      <span className="font-medium text-teal-200">{att.name}</span>
-                      <span className="text-[10px] text-charcoal-400 font-mono">
+                  <div key={att.id} className="bg-white p-5 rounded-2xl border border-black/10 space-y-3 shadow-md">
+                    <div className="flex items-center justify-between text-xs text-cream-ink">
+                      <span className="font-bold text-sm text-cream-ink">{att.name}</span>
+                      <span className="font-mono text-cream-ink/60">
                         {att.size ? `${(att.size / 1024).toFixed(0)} KB` : 'Audio'}
                       </span>
                     </div>
                     {att.dataUrl && (
-                      <audio controls src={att.dataUrl} className="w-full h-10 rounded-lg" />
+                      <audio controls src={att.dataUrl} className="w-full h-12 rounded-xl" />
                     )}
                   </div>
                 ))}
@@ -284,32 +284,32 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
             )}
 
             {/* Original Raw Notes / Audio Transcript */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-display tracking-wider text-text-muted uppercase">Original Raw Input / Transcript</h3>
-              <p className="text-xs text-text-muted bg-white/5 p-3.5 rounded-xl border border-white/10 italic leading-relaxed whitespace-pre-wrap">
+            <div className="space-y-3">
+              <h3 className="font-display text-2xl tracking-wider text-cream-ink uppercase">ORIGINAL RAW INPUT / TRANSCRIPT</h3>
+              <p className="text-sm sm:text-base text-cream-ink/90 bg-white p-5 rounded-2xl border border-black/10 italic leading-relaxed whitespace-pre-wrap font-medium shadow-sm">
                 "{incident.narrative_raw}"
               </p>
             </div>
 
             {/* Attachments Section */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between border-t border-white/10 pt-4">
-                <h3 className="text-xs font-display tracking-wider text-text-muted uppercase flex items-center space-x-1.5">
-                  <Paperclip className="w-4 h-4 text-magenta" />
-                  <span>Attached Evidence ({attachmentsList.length})</span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-t border-black/10 pt-6">
+                <h3 className="font-display text-2xl tracking-wider text-cream-ink uppercase flex items-center space-x-2">
+                  <Paperclip className="w-5 h-5 text-magenta" />
+                  <span>ATTACHED EVIDENCE ({attachmentsList.length})</span>
                 </h3>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <button
                     onClick={() => setShowCameraModal(true)}
-                    className="px-3 py-1.5 rounded-full bg-magenta/20 hover:bg-magenta/30 border border-magenta/40 text-magenta text-[11px] font-semibold flex items-center space-x-1 transition"
+                    className="px-4 py-2 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 transition shadow-sm"
                   >
-                    <Camera className="w-3.5 h-3.5" />
+                    <Camera className="w-4 h-4" />
                     <span>Take Photo</span>
                   </button>
 
-                  <label className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-text-light text-[11px] font-semibold flex items-center space-x-1 transition cursor-pointer">
-                    <Plus className="w-3.5 h-3.5 text-magenta" />
+                  <label className="px-4 py-2 rounded-full bg-white hover:bg-cream border border-black/10 text-cream-ink text-xs font-bold uppercase tracking-wider flex items-center space-x-1.5 transition cursor-pointer shadow-sm">
+                    <Plus className="w-4 h-4 text-magenta" />
                     <span>Add File</span>
                     <input
                       ref={fileInputRef}
@@ -323,39 +323,39 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
               </div>
 
               {attachmentsList.length === 0 ? (
-                <p className="text-xs text-text-muted italic">No attachments added yet.</p>
+                <p className="text-xs text-cream-ink/60 italic font-medium">No attachments added yet.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {attachmentsList.map(att => (
-                    <div key={att.id} className="bg-white/5 p-3.5 rounded-xl border border-white/10 space-y-2">
+                    <div key={att.id} className="bg-white p-5 rounded-2xl border border-black/10 space-y-3 shadow-sm">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-xs">
+                        <div className="flex items-center space-x-3 text-xs">
                           {att.type === 'audio' ? (
-                            <Mic className="w-4 h-4 text-magenta shrink-0" />
+                            <Mic className="w-5 h-5 text-magenta shrink-0" />
                           ) : att.isLiveCapture || att.captureMethod === 'camera' ? (
-                            <Camera className="w-4 h-4 text-magenta shrink-0" />
+                            <Camera className="w-5 h-5 text-magenta shrink-0" />
                           ) : (
-                            <Paperclip className="w-4 h-4 text-text-muted shrink-0" />
+                            <Paperclip className="w-5 h-5 text-cream-ink/60 shrink-0" />
                           )}
                           <div className="truncate">
-                            <span className="text-text-light font-medium block truncate">{att.name}</span>
+                            <span className="text-cream-ink font-bold text-sm block truncate">{att.name}</span>
                             {att.isLiveCapture && (
-                              <span className="text-[10px] text-magenta font-mono">📷 Live Watermarked Photo</span>
+                              <span className="text-[10px] text-magenta font-bold uppercase tracking-wider">📷 Live Watermarked Photo</span>
                             )}
                           </div>
                         </div>
 
                         <button
                           onClick={() => handleRemoveAttachment(att.id)}
-                          className="text-text-muted hover:text-magenta text-xs transition"
+                          className="text-cream-ink/60 hover:text-magenta transition"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
 
                       {att.type === 'image' && att.dataUrl && (
-                        <div className="mt-2 max-w-sm rounded-lg overflow-hidden border border-white/10">
-                          <img src={att.dataUrl} alt={att.name} className="w-full h-auto max-h-48 object-cover" />
+                        <div className="mt-2 max-w-md rounded-2xl overflow-hidden border border-black/10 shadow-sm">
+                          <img src={att.dataUrl} alt={att.name} className="w-full h-auto max-h-60 object-cover" />
                         </div>
                       )}
                     </div>
@@ -367,36 +367,36 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
           </div>
         ) : (
           /* EDITABLE FORM VIEW */
-          <div className="space-y-4 text-xs">
-            <h3 className="font-display text-2xl text-magenta">EDITING INCIDENT RECORD</h3>
+          <div className="space-y-6 text-sm">
+            <h3 className="font-display text-4xl text-cream-ink leading-none">EDITING INCIDENT RECORD</h3>
 
-            <div>
-              <label className="block text-text-muted mb-1 font-semibold">Incident Date & Time</label>
+            <div className="space-y-2">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Incident Date & Time</label>
               <input
                 type="datetime-local"
                 value={datetime}
                 onChange={(e) => setDatetime(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-text-muted mb-1 font-semibold">Location</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Location</label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                  className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
                 />
               </div>
 
-              <div>
-                <label className="block text-text-muted mb-1 font-semibold">Category</label>
+              <div className="space-y-2">
+                <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Category</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as CategoryType)}
-                  className="w-full bg-bg-black border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                  className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-bold focus:outline-none focus:border-magenta transition-all shadow-inner"
                 >
                   <option value="Verbal">Verbal</option>
                   <option value="Physical">Physical</option>
@@ -410,81 +410,81 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-text-muted mb-1 font-semibold">Person Involved Name</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Person Involved Name</label>
                 <input
                   type="text"
                   value={personName}
                   onChange={(e) => setPersonName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                  className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
                 />
               </div>
 
-              <div>
-                <label className="block text-text-muted mb-1 font-semibold">Role / Relationship</label>
+              <div className="space-y-2">
+                <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Role / Relationship</label>
                 <input
                   type="text"
                   value={personRole}
                   onChange={(e) => setPersonRole(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                  className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-text-muted mb-1 font-semibold">Summary</label>
+            <div className="space-y-2">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Summary</label>
               <input
                 type="text"
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
               />
             </div>
 
-            <div>
-              <label className="block text-text-muted mb-1 font-semibold">Key Actions (One per line)</label>
+            <div className="space-y-2">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Key Actions (One per line)</label>
               <textarea
                 value={keyActionsText}
                 onChange={(e) => setKeyActionsText(e.target.value)}
                 rows={3}
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
               />
             </div>
 
-            <div>
-              <label className="block text-text-muted mb-1 font-semibold">Original Raw Notes / Transcript</label>
+            <div className="space-y-2">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Original Raw Notes / Transcript</label>
               <textarea
                 value={rawNotes}
                 onChange={(e) => setRawNotes(e.target.value)}
                 rows={4}
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
               />
             </div>
 
-            <div>
-              <label className="block text-text-muted mb-1 font-semibold">Witnesses (Comma separated)</label>
+            <div className="space-y-2">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Witnesses (Comma separated)</label>
               <input
                 type="text"
                 value={witnessesText}
                 onChange={(e) => setWitnessesText(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta"
+                className="w-full bg-white border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta transition-all shadow-inner"
               />
             </div>
 
-            <div className="pt-3 flex space-x-3">
+            <div className="pt-4 flex items-center space-x-4">
               <button
                 onClick={() => setIsEditing(false)}
-                className="flex-1 py-3 rounded-full border border-magenta/50 text-magenta hover:bg-magenta/10 font-semibold text-xs uppercase tracking-wider transition"
+                className="flex-1 py-4 rounded-full border border-black/20 text-cream-ink hover:bg-white font-bold text-xs uppercase tracking-wider transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 py-3 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-semibold text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center space-x-1.5"
+                className="flex-1 py-4 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-lg tracking-wider transition shadow-lg flex items-center justify-center space-x-2"
               >
-                <Save className="w-4 h-4" />
-                <span>Save Changes</span>
+                <Save className="w-5 h-5" />
+                <span>SAVE CHANGES</span>
               </button>
             </div>
           </div>
@@ -495,26 +495,26 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-bg-black border border-white/10 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl film-grain">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-md p-8 space-y-6 shadow-2xl text-cream-ink">
             <div className="flex items-center space-x-3 text-magenta">
-              <AlertOctagon className="w-6 h-6" />
-              <h3 className="font-display text-2xl text-text-light">PERMANENTLY DELETE ENTRY?</h3>
+              <AlertOctagon className="w-7 h-7" />
+              <h3 className="font-display text-3xl text-cream-ink leading-none">PERMANENTLY DELETE ENTRY?</h3>
             </div>
-            <p className="text-xs text-text-muted leading-relaxed">
+            <p className="text-sm text-cream-ink/80 leading-relaxed font-medium">
               This action cannot be undone. This incident record will be permanently wiped from your local device storage.
             </p>
             <div className="flex items-center space-x-3 pt-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-full border border-magenta/50 text-magenta hover:bg-magenta/10 font-semibold text-xs uppercase tracking-wider transition"
+                className="flex-1 py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
               >
                 Cancel
               </button>
               <button
                 onClick={() => onDelete(incident.id)}
-                className="flex-1 py-2.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-semibold text-xs uppercase tracking-wider transition shadow-md"
+                className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md"
               >
-                Yes, Delete Entry
+                YES, DELETE ENTRY
               </button>
             </div>
           </div>
