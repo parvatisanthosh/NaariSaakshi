@@ -10,15 +10,15 @@ import {
 } from 'firebase/firestore';
 import { CategoryType } from './types';
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration read from environment variables
 export const firebaseConfig = {
-  apiKey: "AIzaSyBhk7MlgCCAP_MXQYqRBNqOtd85AjkHSXQ",
-  authDomain: "naarisaakshi.firebaseapp.com",
-  projectId: "naarisaakshi",
-  storageBucket: "naarisaakshi.firebasestorage.app",
-  messagingSenderId: "1090898848100",
-  appId: "1:1090898848100:web:5ff6ece63ab481910fb271",
-  measurementId: "G-7E9H7NGZJB"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBhk7MlgCCAP_MXQYqRBNqOtd85AjkHSXQ",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "naarisaakshi.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "naarisaakshi",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "naarisaakshi.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1090898848100",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1090898848100:web:5ff6ece63ab481910fb271",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-7E9H7NGZJB"
 };
 
 let db: any = null;
