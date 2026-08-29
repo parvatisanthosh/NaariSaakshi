@@ -16,15 +16,15 @@
     --cream-ink: #1A1410;
   }
 
-  /* Light Theme Overrides */
+  /* High-Contrast Pure Black & White Light Theme Overrides */
   body.theme-light, [data-theme="light"] {
-    --bg-black-rgb: 248, 246, 240;
-    --text-light-rgb: 26, 20, 16;
-    --text-muted-rgb: 82, 75, 72;
+    --bg-black-rgb: 255, 255, 255;
+    --text-light-rgb: 0, 0, 0;
+    --text-muted-rgb: 60, 60, 60;
     --cream: #FFFFFF;
-    --cream-ink: #1A1410;
-    background-color: #F8F6F0 !important;
-    color: #1A1410 !important;
+    --cream-ink: #000000;
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
   }
 
   body.theme-light::before, [data-theme="light"]::before {
@@ -32,35 +32,39 @@
   }
 
   body.theme-light header, [data-theme="light"] header {
-    background-color: rgba(248, 246, 240, 0.95) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
   body.theme-light nav, [data-theme="light"] nav {
-    background-color: rgba(248, 246, 240, 0.95) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
   body.theme-light .bg-bg-black, [data-theme="light"] .bg-bg-black {
     background-color: #FFFFFF !important;
-    color: #1A1410 !important;
-    border-color: rgba(0, 0, 0, 0.12) !important;
+    color: #000000 !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
   body.theme-light .bg-white\/5, [data-theme="light"] .bg-white\/5 {
-    background-color: rgba(0, 0, 0, 0.05) !important;
+    background-color: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  body.theme-light .bg-white\/10, [data-theme="light"] .bg-white\/10 {
+    background-color: rgba(0, 0, 0, 0.06) !important;
   }
 
   body.theme-light .border-white\/10, [data-theme="light"] .border-white\/10 {
-    border-color: rgba(0, 0, 0, 0.12) !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
   body.theme-light .text-text-light, [data-theme="light"] .text-text-light {
-    color: #1A1410 !important;
+    color: #000000 !important;
   }
 
   body.theme-light .text-text-muted, [data-theme="light"] .text-text-muted {
-    color: #524B48 !important;
+    color: #444444 !important;
   }
 
   body {
@@ -159,8 +163,8 @@
 /* Leaflet Map Styling */
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background-color: #ffffff !important;
-  color: #1A1410 !important;
-  border: 1px solid rgba(0,0,0,0.1) !important;
+  color: #000000 !important;
+  border: 1px solid rgba(0,0,0,0.15) !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
   border-radius: 16px !important;
 }
@@ -169,14 +173,14 @@
   line-height: 1.4 !important;
 }
 .leaflet-popup-close-button {
-  color: #524B48 !important;
+  color: #444444 !important;
   padding: 6px !important;
 }
 .leaflet-popup-close-button:hover {
   color: #E8368F !important;
 }
 .leaflet-container {
-  background-color: #f8f6f0 !important;
+  background-color: #ffffff !important;
   font-family: inherit !important;
   border-radius: 16px;
   z-index: 10;
