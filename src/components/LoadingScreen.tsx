@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Shield } from 'lucide-react';
 
 interface LoadingScreenProps {
   onComplete: () => void;
@@ -108,7 +109,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
       role="status"
       aria-live="polite"
       aria-label={`Loading application, ${progress} percent complete`}
-      className={`fixed inset-0 z-[100] bg-[#0D0B10] flex flex-col justify-between items-center py-10 select-none overflow-hidden transition-all duration-[750ms] film-grain ${
+      className={`fixed inset-0 z-[100] bg-[#0D0B10] flex flex-col justify-between items-center p-8 sm:p-12 select-none overflow-hidden transition-all duration-[750ms] film-grain ${
         isExiting ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
       }`}
       style={{
@@ -116,82 +117,93 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
         ...(isReducedMotion && isExiting ? { transitionDuration: '300ms', transform: 'none' } : {}),
       }}
     >
-      {/* CSS Keyframes for Radar Pulse Rings */}
+      {/* CSS Keyframes for Expanding Pulsing Radar Waves */}
       <style>{`
-        @keyframes radar-pulse {
+        @keyframes radar-wave {
           0% {
-            width: 40px;
-            height: 40px;
+            transform: scale(0.6);
             opacity: 0.8;
           }
           100% {
-            width: 280px;
-            height: 280px;
+            transform: scale(2.8);
             opacity: 0;
           }
         }
-        .animate-radar {
-          animation: radar-pulse 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        .animate-radar-wave {
+          animation: radar-wave 3s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
         }
       `}</style>
 
-      {/* Brand wordmark fixed near top */}
-      <div className="font-display tracking-[0.2em] text-lg text-[#c9c3cc]">
-        NAARISAAKSHI
-      </div>
+      {/* Dark Moody Photographic Background Layer */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center opacity-18 mix-blend-overlay pointer-events-none transition-transform duration-1000 transform scale-105"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1600&auto=format&fit=crop')`
+        }}
+      />
 
-      {/* Center section: Radar pulse rings + Percentage Counter + Progress Bar */}
-      <div className="relative flex flex-col items-center justify-center">
-        {/* Radar Pulse Rings */}
-        {!isReducedMotion && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* Moving Ambient Neon Light Orbs */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-magenta/20 rounded-full blur-[120px] animate-pulse pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[450px] h-[450px] bg-violet/15 rounded-full blur-[140px] animate-pulse pointer-events-none" style={{ animationDelay: '1.2s' }} />
+
+      {/* Moving Expanding Radar Waves in Center */}
+      {!isReducedMotion && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <div className="w-64 h-64 rounded-full border border-magenta/40 animate-radar-wave" style={{ animationDelay: '0s' }} />
+          <div className="w-64 h-64 rounded-full border border-magenta/30 animate-radar-wave" style={{ animationDelay: '1s' }} />
+          <div className="w-64 h-64 rounded-full border border-violet/30 animate-radar-wave" style={{ animationDelay: '2s' }} />
+        </div>
+      )}
+
+      {/* Top Spacer */}
+      <div className="w-full" />
+
+      {/* Center Giant Wordmark + Thin Progress Line */}
+      <div className="relative z-10 flex flex-col items-center justify-center space-y-6 text-center w-full my-auto">
+        <h1 className="font-display text-[clamp(56px,13vw,150px)] tracking-[0.08em] text-[#F5E7DE] leading-none drop-shadow-[0_15px_35px_rgba(0,0,0,0.95)] select-none">
+          NAARISAAKSHI
+        </h1>
+
+        {/* Thin Laser Progress Bar with Moving Glowing Comet Tip */}
+        <div className="relative w-64 sm:w-96 h-[3px] bg-white/10 rounded-full overflow-hidden shadow-2xl">
+          <div
+            className="h-full bg-gradient-to-r from-magenta via-magenta-deep to-violet transition-all duration-75 ease-out rounded-full relative shadow-[0_0_15px_#E8368F]"
+            style={{ width: `${progress}%` }}
+          >
+            {/* Moving Glowing Comet Tip */}
             <div
-              className="absolute rounded-full border border-[rgba(232,54,143,0.5)] animate-radar"
-              style={{ animationDelay: '0s' }}
-            />
-            <div
-              className="absolute rounded-full border border-[rgba(232,54,143,0.5)] animate-radar"
-              style={{ animationDelay: '0.8s' }}
-            />
-            <div
-              className="absolute rounded-full border border-[rgba(232,54,143,0.5)] animate-radar"
-              style={{ animationDelay: '1.6s' }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow-[0_0_12px_3px_#E8368F,0_0_20px_6px_#7C5CFF]"
+              style={{ transform: 'translate(50%, -50%)' }}
             />
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Digit-roll percentage counter */}
-        <div className="relative z-10 flex items-baseline text-[#E8368F] font-display text-[clamp(64px,10vw,88px)] leading-none mb-6">
-          <div className="flex items-center">
+      {/* Bottom Footer: Left Brand Icon + Right Percentage Count */}
+      <div className="relative z-10 w-full flex items-end justify-between text-[#F5F1F3]">
+        {/* Left Brand Shield Logo */}
+        <div className="flex items-center space-x-3 bg-bg-black/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 shadow-xl">
+          <div className="w-9 h-9 rounded-xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-md">
+            <Shield className="w-5 h-5 text-bg-black" />
+          </div>
+          <div>
+            <span className="font-display text-2xl tracking-wider text-text-light block leading-none">NAARISAAKSHI</span>
+            <span className="text-[9px] text-[#c9c3cc] font-mono tracking-widest uppercase block mt-0.5 font-bold">PRIVATE INCIDENT JOURNAL</span>
+          </div>
+        </div>
+
+        {/* Right Percentage Loading Indicator */}
+        <div className="flex items-baseline space-x-2.5 text-[#F5F1F3] font-display bg-bg-black/80 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 shadow-xl">
+          <span className="text-2xl tracking-wider text-text-muted font-semibold">Loading</span>
+          <div className="flex items-baseline text-4xl sm:text-6xl text-magenta font-bold">
             {progress >= 100 && <DigitStrip digit={hundredDigit} />}
             {(progress >= 10 || progress >= 100) && <DigitStrip digit={tenDigit} />}
             <DigitStrip digit={unitDigit} />
-          </div>
-          <span className="text-[0.4em] ml-1 self-start font-normal text-[#E8368F]/80">%</span>
-        </div>
-
-        {/* Comet progress line */}
-        <div className="relative w-[200px] h-[2px] bg-white/10 rounded-full z-10">
-          <div
-            className="h-full bg-[#E8368F] transition-all duration-75 ease-out rounded-full relative"
-            style={{ width: `${progress}%` }}
-          >
-            {/* Glowing dot tip */}
-            <div
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[#E8368F]"
-              style={{
-                boxShadow: '0 0 8px 2px #E8368F, 0 0 12px 4px #7C5CFF',
-                transform: 'translate(50%, -50%)',
-              }}
-            />
+            <span className="text-3xl ml-0.5 text-magenta font-bold">%</span>
           </div>
         </div>
       </div>
 
-      {/* Tagline fixed near bottom */}
-      <div className="font-display tracking-[0.2em] text-xs text-[#c9c3cc]/60">
-        STAY ALERT. STAY SAFE.
-      </div>
     </div>
   );
 };

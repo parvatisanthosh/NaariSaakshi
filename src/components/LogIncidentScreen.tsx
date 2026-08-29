@@ -458,27 +458,31 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       <div className="flex items-center justify-between">
         <button
           onClick={onCancel}
-          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+          className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Timeline</span>
         </button>
       </div>
 
-      {/* Top Banner Nudge */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-start space-x-3">
-          <div className="w-9 h-9 rounded-full bg-teal-950/80 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0 mt-0.5">
-            <Sparkles className="w-5 h-5" />
+      {/* SECTION 1: TOP HERO BANNER (High-Contrast Theme Aware) */}
+      <section className="rounded-3xl bg-bg-black border border-white/10 p-8 sm:p-12 shadow-2xl relative z-10 w-full space-y-4 film-grain">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 rounded-2xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-lg">
+            <Sparkles className="w-6 h-6 text-bg-black" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-charcoal-100">Log an Incident</h2>
-            <p className="text-sm text-charcoal-300 mt-1 leading-relaxed">
-              "Just say or type what happened in your own words. We'll quietly organize it into a structured, timestamped record for you."
-            </p>
+            <span className="text-xs font-mono font-bold tracking-widest text-magenta uppercase block">VOICE & TEXT JOURNALING</span>
+            <h1 className="font-display text-4xl sm:text-6xl tracking-wide text-text-light leading-none">
+              LOG AN INCIDENT
+            </h1>
           </div>
         </div>
-      </div>
+
+        <p className="text-sm sm:text-base text-text-muted leading-relaxed font-medium max-w-4xl">
+          "Just say or type what happened in your own words. We'll quietly organize it into a structured, timestamped record for you."
+        </p>
+      </section>
 
       {/* Mode Switcher Buttons */}
       <div className="flex p-1.5 bg-white/5 rounded-full border border-white/10 shadow-sm">
