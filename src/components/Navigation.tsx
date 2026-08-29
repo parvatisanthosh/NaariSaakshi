@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield, PhoneCall, Video, MessageSquare, BookOpen } from 'lucide-react';
+import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield, PhoneCall, Video, MessageSquare, BookOpen, HelpCircle } from 'lucide-react';
 
-export type ActiveTab = 'timeline' | 'log' | 'patterns' | 'report' | 'rights' | 'settings' | 'quick-capture' | 'record-call';
+export type ActiveTab = 'timeline' | 'log' | 'patterns' | 'report' | 'faq' | 'rights' | 'settings' | 'quick-capture' | 'record-call';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -29,18 +29,23 @@ export const Navigation: React.FC<NavbarProps> = ({
   return (
     <>
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-charcoal-900/90 backdrop-blur-md border-b border-charcoal-800 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-30 bg-bg-black/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-8 py-3.5">
+        <div className="w-full flex items-center justify-between">
           <div 
             onClick={() => setActiveTab('timeline')}
             className="flex items-center space-x-2.5 cursor-pointer group"
           >
-            <div className="w-8 h-8 rounded-lg bg-teal-900/60 border border-teal-500/40 flex items-center justify-center text-teal-400 group-hover:border-teal-400 transition">
-              <Shield className="w-4 h-4" />
+            <div 
+              className="w-9 h-9 rounded-xl border border-magenta/40 flex items-center justify-center text-magenta group-hover:border-magenta transition shadow-sm"
+              style={{
+                background: 'linear-gradient(145deg, rgba(232,54,143,0.3), rgba(124,92,255,0.12))'
+              }}
+            >
+              <Shield className="w-5 h-5" />
             </div>
             <div>
-              <span className="font-semibold text-charcoal-100 text-base tracking-tight block leading-none">EvidenceHer</span>
-              <span className="text-[10px] text-charcoal-400 font-mono tracking-wider uppercase block mt-0.5">Private Log</span>
+              <span className="font-display text-2xl tracking-wider text-text-light block leading-none">NAARISAAKSHI</span>
+              <span className="text-[9px] text-text-muted font-mono tracking-widest uppercase block mt-0.5">PRIVATE INCIDENT JOURNAL</span>
             </div>
           </div>
 
@@ -76,6 +81,15 @@ export const Navigation: React.FC<NavbarProps> = ({
               <span>SOS</span>
             </button>
 
+            {/* FAQ Quick Link */}
+            <button
+              onClick={() => setActiveTab('faq')}
+              title="Help & FAQ"
+              className="p-1.5 rounded-full hover:bg-white/10 text-text-muted hover:text-magenta transition"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+
             {/* Discreet Quick Exit Button */}
             {quickExitEnabled && (
               <button
@@ -92,31 +106,31 @@ export const Navigation: React.FC<NavbarProps> = ({
       </header>
 
       {/* Bottom Navigation Bar for Mobile First Usability */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-charcoal-900/95 backdrop-blur-lg border-t border-charcoal-800 px-2 py-1.5 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-bg-black/95 backdrop-blur-lg border-t border-white/10 px-2 py-1.5 pb-safe">
         <div className="max-w-md mx-auto flex items-center justify-around">
           
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
               activeTab === 'timeline'
-                ? 'text-teal-400 bg-teal-950/40'
-                : 'text-charcoal-400 hover:text-charcoal-200'
+                ? 'text-magenta bg-white/5'
+                : 'text-text-muted hover:text-text-light'
             }`}
           >
             <Home className="w-5 h-5" />
-            <span className="text-[11px] font-medium mt-1">Timeline</span>
+            <span className="text-[10px] font-medium mt-1">Timeline</span>
           </button>
 
           <button
             onClick={() => setActiveTab('patterns')}
-            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
               activeTab === 'patterns'
-                ? 'text-teal-400 bg-teal-950/40'
-                : 'text-charcoal-400 hover:text-charcoal-200'
+                ? 'text-magenta bg-white/5'
+                : 'text-text-muted hover:text-text-light'
             }`}
           >
             <PieChart className="w-5 h-5" />
-            <span className="text-[11px] font-medium mt-1">Patterns</span>
+            <span className="text-[10px] font-medium mt-1">Patterns</span>
           </button>
 
           {/* Prominent Center "+ Log" Button */}
@@ -126,22 +140,37 @@ export const Navigation: React.FC<NavbarProps> = ({
               activeTab === 'log' ? 'scale-105' : 'hover:scale-102'
             }`}
           >
-            <div className="w-13 h-13 rounded-full bg-gradient-to-tr from-teal-700 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-900/50 border-2 border-charcoal-900 ring-2 ring-teal-500/30">
-              <PlusCircle className="w-7 h-7" />
+            <div 
+              className="w-13 h-13 rounded-full bg-gradient-to-br from-magenta to-violet text-bg-black flex items-center justify-center shadow-lg shadow-magenta/30 transition active:scale-95"
+              style={{ boxShadow: '0 0 0 6px #0D0B10, 0 10px 25px -3px rgba(232, 54, 143, 0.4)' }}
+            >
+              <PlusCircle className="w-7 h-7 text-bg-black font-bold" />
             </div>
-            <span className="text-[11px] font-semibold text-teal-300 mt-1">Log</span>
+            <span className="text-[10px] font-semibold text-magenta mt-1">Log</span>
           </button>
 
           <button
             onClick={() => setActiveTab('report')}
             className={`flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl transition-all ${
               activeTab === 'report'
-                ? 'text-teal-400 bg-teal-950/40'
-                : 'text-charcoal-400 hover:text-charcoal-200'
+                ? 'text-magenta bg-white/5'
+                : 'text-text-muted hover:text-text-light'
             }`}
           >
             <FileText className="w-5 h-5" />
-            <span className="text-[11px] font-medium mt-1">Report</span>
+            <span className="text-[10px] font-medium mt-1">Report</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('faq')}
+            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+              activeTab === 'faq'
+                ? 'text-magenta bg-white/5'
+                : 'text-text-muted hover:text-text-light'
+            }`}
+          >
+            <HelpCircle className="w-5 h-5" />
+            <span className="text-[10px] font-medium mt-1">FAQ</span>
           </button>
 
           <button
@@ -158,14 +187,14 @@ export const Navigation: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
               activeTab === 'settings'
-                ? 'text-teal-400 bg-teal-950/40'
-                : 'text-charcoal-400 hover:text-charcoal-200'
+                ? 'text-magenta bg-white/5'
+                : 'text-text-muted hover:text-text-light'
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="text-[11px] font-medium mt-1">Settings</span>
+            <span className="text-[10px] font-medium mt-1">Settings</span>
           </button>
 
         </div>

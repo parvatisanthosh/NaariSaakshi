@@ -13,11 +13,14 @@ import { IncidentDetailScreen } from './components/IncidentDetailScreen';
 import { PatternsScreen } from './components/PatternsScreen';
 import { ReportScreen } from './components/ReportScreen';
 import { SettingsScreen } from './components/SettingsScreen';
+import { FAQScreen } from './components/FAQScreen';
+import { LoadingScreen } from './components/LoadingScreen';
 import { StorageService } from './storageService';
 import { AppSettings, Incident } from './types';
 import { analyzeIncidentPatterns } from './aiEngine';
 
 export const App: React.FC = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('timeline');
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [settings, setSettings] = useState<AppSettings>(StorageService.getSettings());
@@ -217,8 +220,11 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-charcoal-900 text-charcoal-100 flex flex-col font-sans selection:bg-teal-700 selection:text-white">
+    <div className="min-h-screen bg-bg-black text-text-light flex flex-col font-sans selection:bg-magenta selection:text-bg-black relative overflow-x-hidden">
       
+      {/* Session Loading Screen Preloader */}
+      {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
+
       {/* PIN Security Modal */}
       {isLocked && settings.pinEnabled && (
         <PinLockModal
@@ -265,13 +271,13 @@ export const App: React.FC = () => {
 
       {/* Pattern Threshold Crossing Notification Banner */}
       {patternBanner && (
-        <div className="sticky top-14 z-40 bg-gradient-to-r from-plum-950 via-charcoal-800 to-teal-950 border-b border-plum-500/40 px-4 py-3 shadow-xl transition-all">
-          <div className="max-w-3xl mx-auto flex items-center justify-between text-xs">
+        <div className="sticky top-14 z-40 bg-[linear-gradient(135deg,rgba(232,54,143,0.25),rgba(124,92,255,0.2))] border-b border-magenta/40 px-4 py-3 shadow-xl transition-all backdrop-blur-md">
+          <div className="max-w-7xl mx-auto flex items-center justify-between text-xs px-4">
             <div className="flex items-center space-x-2.5">
-              <div className="w-7 h-7 rounded-full bg-plum-900/80 border border-plum-400/50 flex items-center justify-center text-plum-300 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-magenta/20 border border-magenta/50 flex items-center justify-center text-magenta shrink-0">
                 <ShieldAlert className="w-4 h-4" />
               </div>
-              <span className="font-medium text-charcoal-100">{patternBanner.text}</span>
+              <span className="font-medium text-text-light">{patternBanner.text}</span>
             </div>
 
             <div className="flex items-center space-x-2 shrink-0">
@@ -281,7 +287,7 @@ export const App: React.FC = () => {
                   setActiveTab('patterns');
                   setPatternBanner(null);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-medium flex items-center space-x-1 shadow-md transition"
+                className="px-3 py-1.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-semibold flex items-center space-x-1 shadow-md transition"
               >
                 <span>View Pattern</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -289,7 +295,7 @@ export const App: React.FC = () => {
 
               <button
                 onClick={() => setPatternBanner(null)}
-                className="p-1 text-charcoal-400 hover:text-charcoal-200 transition"
+                className="p-1 text-text-muted hover:text-text-light transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -298,8 +304,8 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Screen Body View */}
-      <main className="flex-1 max-w-3xl w-full mx-auto">
+      {/* Main Screen Body View - Full Width Layout */}
+      <main className="flex-1 w-full mx-auto px-4 sm:px-8 py-6 relative z-10">
         {selectedIncident ? (
           <IncidentDetailScreen
             incident={selectedIncident}
@@ -364,6 +370,10 @@ export const App: React.FC = () => {
                 onOpenSos={() => setShowSosPanel(true)}
                 onBack={() => setActiveTab('timeline')}
               />
+            )}
+
+            {activeTab === 'faq' && (
+              <FAQScreen />
             )}
 
             {activeTab === 'settings' && (

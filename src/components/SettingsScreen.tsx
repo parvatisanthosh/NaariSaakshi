@@ -78,7 +78,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(incidents, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `EvidenceHer_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute("download", `NaariSaakshi_Backup_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -110,7 +110,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
+    <div className="w-full space-y-10 pb-28 relative">
       
       {/* Top Back Navigation Button */}
       {onBack && (
@@ -131,36 +131,38 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <Shield className="w-4 h-4" />
           <span>Security & Personal Data Control</span>
         </div>
-        <h2 className="text-lg font-semibold text-charcoal-100">Privacy & App Settings</h2>
-        <p className="text-xs text-charcoal-300 leading-relaxed">
+
+        <p className="text-sm sm:text-base text-cream-ink/80 leading-relaxed font-medium max-w-4xl">
           Your data is stored 100% locally in your browser. Nothing is sent to central servers without your explicit action.
         </p>
       </div>
 
       {statusMessage && (
-        <div className="bg-teal-950/80 border border-teal-500/50 rounded-xl p-3 text-xs text-teal-200 flex items-center space-x-2">
-          <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
+        <div className="bg-magenta/15 border border-magenta rounded-2xl p-4 text-xs font-bold text-magenta flex items-center space-x-2 shadow-md">
+          <CheckCircle2 className="w-5 h-5 text-magenta shrink-0" />
           <span>{statusMessage}</span>
         </div>
       )}
 
-      {/* Honest Disclaimer Box (As requested in specs) */}
-      <div className="bg-charcoal-800/40 border border-charcoal-700/60 rounded-2xl p-4 flex items-start space-x-3 text-xs">
-        <Info className="w-5 h-5 text-teal-400 shrink-0 mt-0.5" />
-        <p className="text-charcoal-300 leading-relaxed">
-          <strong className="text-charcoal-200 block mb-0.5">Honest Legal Note:</strong>
+      {/* Honest Disclaimer Box */}
+      <section className="bg-white text-cream-ink border border-black/10 rounded-3xl p-6 sm:p-8 flex items-start space-x-4 text-xs shadow-xl relative z-10 w-full">
+        <Info className="w-6 h-6 text-magenta shrink-0 mt-0.5" />
+        <p className="leading-relaxed font-medium text-sm">
+          <strong className="font-display text-2xl tracking-wide text-cream-ink block mb-1">HONEST LEGAL NOTE</strong>
           This app helps you document events clearly. It does not replace legal advice. Exported reports are structured drafts for you to review before submitting anywhere.
         </p>
-      </div>
+      </section>
 
       {/* Security: PIN Lock */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-4 text-xs">
+      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <Lock className="w-4 h-4 text-teal-400" />
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/40 flex items-center justify-center text-magenta">
+              <Lock className="w-5 h-5" />
+            </div>
             <div>
-              <span className="font-semibold text-charcoal-100 block">App PIN Security Lock</span>
-              <span className="text-[11px] text-charcoal-400">Require 4-digit code when opening EvidenceHer</span>
+              <span className="font-display text-2xl text-cream-ink tracking-wide block">APP PIN SECURITY LOCK</span>
+              <span className="text-xs text-cream-ink/70 font-medium">Require 4-digit code when opening NaariSaakshi</span>
             </div>
           </div>
 
@@ -171,41 +173,43 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               onChange={handleTogglePin}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-charcoal-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+            <div className="w-12 h-6 bg-cream border border-black/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-cream-ink after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-magenta peer-checked:after:bg-bg-black"></div>
           </label>
         </div>
 
         {settings.pinEnabled && (
-          <div className="pt-2 border-t border-charcoal-700/60 space-y-2">
-            <label className="block text-charcoal-300 font-medium">Set 4-Digit Security PIN</label>
-            <div className="flex space-x-2">
+          <div className="pt-4 border-t border-black/10 space-y-3">
+            <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Set 4-Digit Security PIN</label>
+            <div className="flex space-x-3">
               <input
                 type="password"
                 maxLength={4}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 placeholder="1234"
-                className="w-32 bg-charcoal-900 border border-charcoal-700 rounded-xl px-3 py-2 text-center text-base tracking-widest text-charcoal-100 focus:outline-none focus:border-teal-500"
+                className="w-36 bg-cream/40 border border-black/10 rounded-2xl px-4 py-3 text-center font-display text-2xl tracking-widest text-cream-ink focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
               />
               <button
                 onClick={handleSavePin}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-medium rounded-xl text-xs transition"
+                className="px-6 py-3 bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-lg tracking-wider rounded-full shadow-md transition"
               >
-                Save PIN
+                SAVE PIN
               </button>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       {/* Quick Exit Configuration */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-4 text-xs">
+      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <ExternalLink className="w-4 h-4 text-teal-400" />
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/40 flex items-center justify-center text-magenta">
+              <ExternalLink className="w-5 h-5" />
+            </div>
             <div>
-              <span className="font-semibold text-charcoal-100 block">Quick Exit Button</span>
-              <span className="text-[11px] text-charcoal-400">Instantly leaves app to neutral webpage</span>
+              <span className="font-display text-2xl text-cream-ink tracking-wide block">QUICK EXIT BUTTON</span>
+              <span className="text-xs text-cream-ink/70 font-medium">Instantly leaves app to neutral webpage</span>
             </div>
           </div>
 
@@ -216,159 +220,160 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               onChange={handleToggleQuickExit}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-charcoal-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+            <div className="w-12 h-6 bg-cream border border-black/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-cream-ink after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-magenta peer-checked:after:bg-bg-black"></div>
           </label>
         </div>
 
         {settings.quickExitEnabled && (
-          <div className="pt-2 border-t border-charcoal-700/60 space-y-2">
-            <label className="block text-charcoal-300 font-medium">Quick Exit Destination URL</label>
-            <div className="flex space-x-2">
+          <div className="pt-4 border-t border-black/10 space-y-3">
+            <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Quick Exit Destination URL</label>
+            <div className="flex space-x-3">
               <input
                 type="text"
                 value={quickExitUrl}
                 onChange={(e) => setQuickExitUrl(e.target.value)}
-                className="flex-1 bg-charcoal-900 border border-charcoal-700 rounded-xl px-3 py-2 text-charcoal-100 focus:outline-none focus:border-teal-500"
+                className="flex-1 bg-cream/40 border border-black/10 rounded-2xl px-4 py-3 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
               />
               <button
                 onClick={handleSaveQuickExitUrl}
-                className="px-4 py-2 bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium rounded-xl text-xs transition"
+                className="px-6 py-3 border-2 border-magenta/60 text-magenta hover:bg-magenta hover:text-bg-black font-display font-bold text-lg tracking-wider rounded-full transition shadow-md"
               >
-                Save URL
+                SAVE URL
               </button>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       {/* Trusted Contact Configuration for SOS */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-4 text-xs">
-        <div className="flex items-center space-x-2.5">
-          <PhoneCall className="w-4 h-4 text-rose-400" />
+      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/40 flex items-center justify-center text-magenta">
+            <PhoneCall className="w-5 h-5" />
+          </div>
           <div>
-            <span className="font-semibold text-charcoal-100 block">Trusted Emergency Contact (SOS Panel)</span>
-            <span className="text-[11px] text-charcoal-400">Add a personal contact for one-tap emergency calling and SMS location sharing</span>
+            <span className="font-display text-2xl text-cream-ink tracking-wide block">TRUSTED EMERGENCY CONTACT (SOS)</span>
+            <span className="text-xs text-cream-ink/70 font-medium">Add a personal contact for one-tap emergency calling and SMS location sharing</span>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-charcoal-700/60 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-charcoal-300 font-medium mb-1">Contact Name</label>
+        <div className="pt-4 border-t border-black/10 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Contact Name</label>
               <input
                 type="text"
                 value={trustedNameInput}
                 onChange={(e) => setTrustedNameInput(e.target.value)}
                 placeholder="e.g. Sister, Best Friend"
-                className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl px-3 py-2 text-charcoal-100 focus:outline-none focus:border-teal-500"
+                className="w-full bg-cream/40 border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
               />
             </div>
-            <div>
-              <label className="block text-charcoal-300 font-medium mb-1">Phone Number</label>
+            <div className="space-y-1.5">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Phone Number</label>
               <input
                 type="tel"
                 value={trustedPhoneInput}
                 onChange={(e) => setTrustedPhoneInput(e.target.value)}
                 placeholder="e.g. +91 98765 43210"
-                className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl px-3 py-2 text-charcoal-100 focus:outline-none focus:border-teal-500"
+                className="w-full bg-cream/40 border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
               />
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-2">
             <button
               onClick={handleSaveTrustedContact}
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-medium rounded-xl text-xs transition"
+              className="px-8 py-3.5 bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-lg tracking-wider rounded-full shadow-lg transition"
             >
-              Save Trusted Contact
+              SAVE TRUSTED CONTACT
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Call Recording Legal Information & Consent Card */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-3 text-xs">
-        <div className="flex items-center space-x-2.5 text-teal-400 font-semibold uppercase tracking-wider">
-          <PhoneCall className="w-4 h-4" />
-          <span>About Call Recording & One-Party Consent</span>
+      {/* Call Recording Legal Information Card */}
+      <section className="bg-cream text-cream-ink border border-black/10 rounded-3xl p-8 space-y-3 text-xs shadow-xl relative z-10 w-full">
+        <div className="flex items-center space-x-3 text-magenta font-display text-2xl tracking-wide uppercase">
+          <PhoneCall className="w-5 h-5" />
+          <span>CALL RECORDING & ONE-PARTY CONSENT LEGAL GUIDE</span>
         </div>
 
-        <p className="text-charcoal-200 leading-relaxed">
+        <p className="text-cream-ink/90 font-medium leading-relaxed text-sm">
           {LEGAL_CALL_RECORDING_INFO.mainNotice}
         </p>
 
-        <p className="text-[11px] text-charcoal-400 italic border-t border-charcoal-700/60 pt-2 leading-relaxed">
+        <p className="text-xs text-cream-ink/70 italic border-t border-black/10 pt-3 leading-relaxed">
           {LEGAL_CALL_RECORDING_INFO.legalNotice}
         </p>
-      </div>
+      </section>
 
       {/* Backup & Data Management */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-4 text-xs">
-        <span className="font-semibold text-charcoal-400 uppercase tracking-wider block">Data Import / Export</span>
+      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
+        <h2 className="font-display text-2xl tracking-wider text-cream-ink uppercase">DATA IMPORT / EXPORT</h2>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={triggerExportJson}
-            className="p-3 bg-charcoal-900 hover:bg-charcoal-900/80 border border-charcoal-700 rounded-xl flex items-center space-x-2 text-charcoal-200 text-left transition"
+            className="p-5 bg-cream/30 hover:bg-cream border border-black/10 rounded-2xl flex items-center space-x-3 text-cream-ink text-left transition shadow-sm"
           >
-            <Download className="w-4 h-4 text-teal-400 shrink-0" />
+            <Download className="w-6 h-6 text-magenta shrink-0" />
             <div>
-              <span className="font-medium block">Export JSON Backup</span>
-              <span className="text-[10px] text-charcoal-400">Save offline copy</span>
+              <span className="font-display text-xl block tracking-wide">EXPORT JSON BACKUP</span>
+              <span className="text-xs text-cream-ink/70 font-medium">Save offline encrypted copy</span>
             </div>
           </button>
 
-          <label className="p-3 bg-charcoal-900 hover:bg-charcoal-900/80 border border-charcoal-700 rounded-xl flex items-center space-x-2 text-charcoal-200 cursor-pointer transition">
-            <Upload className="w-4 h-4 text-teal-400 shrink-0" />
+          <label className="p-5 bg-cream/30 hover:bg-cream border border-black/10 rounded-2xl flex items-center space-x-3 text-cream-ink cursor-pointer transition shadow-sm">
+            <Upload className="w-6 h-6 text-magenta shrink-0" />
             <div>
-              <span className="font-medium block">Restore JSON Backup</span>
-              <span className="text-[10px] text-charcoal-400">Import saved entries</span>
+              <span className="font-display text-xl block tracking-wide">RESTORE JSON BACKUP</span>
+              <span className="text-xs text-cream-ink/70 font-medium">Import saved entries</span>
             </div>
             <input type="file" accept=".json" onChange={handleImportJsonFile} className="hidden" />
           </label>
         </div>
 
-        <div className="pt-3 border-t border-charcoal-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="pt-4 border-t border-black/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="font-semibold text-charcoal-200 block">Clear Location Coordinates</span>
-            <span className="text-[11px] text-charcoal-400">Strips GPS coordinates from all incidents while keeping text addresses intact.</span>
+            <span className="font-display text-xl text-cream-ink block tracking-wide">CLEAR LOCATION COORDINATES</span>
+            <span className="text-xs text-cream-ink/70 font-medium">Strips GPS coordinates from all incidents while keeping text addresses intact.</span>
           </div>
           <button
             onClick={() => {
               onClearLocationData();
               showNotice('Cleared all raw location coordinates from stored entries.');
             }}
-            className="px-3 py-2 bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-amber-300 rounded-xl font-medium flex items-center justify-center space-x-1.5 transition text-xs shrink-0"
+            className="px-6 py-3 border-2 border-magenta/60 text-magenta hover:bg-magenta hover:text-bg-black font-display font-bold text-base tracking-wider rounded-full transition shadow-md shrink-0"
           >
-            <MapPin className="w-3.5 h-3.5" />
-            <span>Clear Location Data</span>
+            CLEAR LOCATION DATA
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Community Safety Signal Privacy Explainer Card */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-3 text-xs">
-        <div className="flex items-center space-x-2 text-cyan-400 font-semibold uppercase tracking-wider">
-          <Globe className="w-4 h-4" />
-          <span>Community Safety Signals & Privacy</span>
+      <section className="bg-cream text-cream-ink border border-black/10 rounded-3xl p-8 space-y-4 text-xs shadow-xl relative z-10 w-full">
+        <div className="flex items-center space-x-3 text-magenta font-display text-2xl tracking-wide uppercase">
+          <Globe className="w-5 h-5" />
+          <span>COMMUNITY SAFETY SIGNALS & PRIVACY GUARANTEE</span>
         </div>
         
-        <p className="text-charcoal-300 leading-relaxed">
+        <p className="text-cream-ink/90 font-medium leading-relaxed text-sm">
           When logging an entry with location, you can choose per incident to anonymously contribute to a shared safety signal map for nearby users.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          <div className="bg-charcoal-900/80 p-3 rounded-xl border border-teal-500/30 space-y-1">
-            <span className="font-semibold text-teal-300 block">✓ What IS Shared (When Opted In)</span>
-            <ul className="text-charcoal-300 text-[11px] space-y-0.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <div className="bg-white/80 p-5 rounded-2xl border border-black/10 space-y-2 shadow-sm">
+            <span className="font-bold text-magenta text-xs uppercase tracking-wider block">✓ WHAT IS SHARED (WHEN OPTED IN)</span>
+            <ul className="text-cream-ink/90 text-xs font-medium space-y-1">
               <li>• Rounded ~100m grid cell count (+1)</li>
               <li>• Broad incident category (e.g. Verbal)</li>
             </ul>
           </div>
 
-          <div className="bg-charcoal-900/80 p-3 rounded-xl border border-rose-500/30 space-y-1">
-            <span className="font-semibold text-rose-300 block">✕ What IS NEVER Shared</span>
-            <ul className="text-charcoal-300 text-[11px] space-y-0.5">
+          <div className="bg-white/80 p-5 rounded-2xl border border-black/10 space-y-2 shadow-sm">
+            <span className="font-bold text-magenta text-xs uppercase tracking-wider block">✕ WHAT IS NEVER SHARED</span>
+            <ul className="text-cream-ink/90 text-xs font-medium space-y-1">
               <li>• Names, people involved, witnesses</li>
               <li>• Raw narratives or summary text</li>
               <li>• User ID or device fingerprint</li>
@@ -376,60 +381,60 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           </div>
         </div>
 
-        <p className="text-[11px] text-charcoal-400 italic">
+        <p className="text-xs text-cream-ink/70 italic font-medium pt-1">
           "This shows how many people have anonymously reported something nearby — never who, never what happened. It's a safety signal, not a search tool."
         </p>
-      </div>
+      </section>
 
       {/* Demo Reset / Danger Zone */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-4 text-xs">
-        <span className="font-semibold text-charcoal-400 uppercase tracking-wider block">Demo & Storage Reset</span>
+      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
+        <h2 className="font-display text-2xl tracking-wider text-cream-ink uppercase">DEMO & STORAGE RESET</h2>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => {
               onResetSeedData();
               showNotice('Reset timeline to sample demo incidents.');
             }}
-            className="flex-1 py-2.5 px-3 bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-charcoal-200 rounded-xl font-medium flex items-center justify-center space-x-1.5 transition"
+            className="flex-1 py-4 px-6 bg-cream/40 hover:bg-cream border border-black/10 text-cream-ink font-display font-bold text-lg tracking-wider rounded-full transition shadow-md flex items-center justify-center space-x-2"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-teal-400" />
-            <span>Reset Demo Seed Data</span>
+            <RefreshCw className="w-5 h-5 text-magenta" />
+            <span>RESET DEMO SEED DATA</span>
           </button>
 
           <button
             onClick={() => setShowClearConfirm(true)}
-            className="flex-1 py-2.5 px-3 bg-charcoal-900 hover:bg-accent-rose/20 border border-charcoal-700 text-accent-rose rounded-xl font-medium flex items-center justify-center space-x-1.5 transition"
+            className="flex-1 py-4 px-6 border-2 border-magenta/60 text-magenta hover:bg-magenta hover:text-bg-black font-display font-bold text-lg tracking-wider rounded-full transition shadow-md flex items-center justify-center space-x-2"
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete All Stored Logs</span>
+            <Trash2 className="w-5 h-5" />
+            <span>DELETE ALL STORED LOGS</span>
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Export Confirmation Modal */}
       {showExportConfirm && (
-        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center space-x-3 text-amber-400">
-              <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-base font-semibold text-charcoal-100">Unencrypted File Warning</h3>
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-md p-8 space-y-6 shadow-2xl text-cream-ink">
+            <div className="flex items-center space-x-3 text-magenta">
+              <AlertTriangle className="w-7 h-7" />
+              <h3 className="font-display text-3xl text-cream-ink leading-none">UNENCRYPTED FILE WARNING</h3>
             </div>
-            <p className="text-xs text-charcoal-300 leading-relaxed">
+            <p className="text-sm text-cream-ink/80 leading-relaxed font-medium">
               This file will be saved to your device without encryption. Make sure to store or delete it somewhere safe.
             </p>
             <div className="flex items-center space-x-3 pt-2">
               <button
                 onClick={() => setShowExportConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+                className="flex-1 py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmExportJson}
-                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition"
+                className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md"
               >
-                Acknowledge & Save File
+                ACKNOWLEDGE & SAVE FILE
               </button>
             </div>
           </div>
@@ -438,19 +443,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
       {/* Wipe Confirmation Modal */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center space-x-3 text-accent-rose">
-              <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-base font-semibold text-charcoal-100">Wipe All Stored Data?</h3>
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-md p-8 space-y-6 shadow-2xl text-cream-ink">
+            <div className="flex items-center space-x-3 text-magenta">
+              <AlertTriangle className="w-7 h-7" />
+              <h3 className="font-display text-3xl text-cream-ink leading-none">WIPE ALL STORED DATA?</h3>
             </div>
-            <p className="text-xs text-charcoal-300 leading-relaxed">
+            <p className="text-sm text-cream-ink/80 leading-relaxed font-medium">
               This will completely wipe all logged incidents from your local browser storage.
             </p>
             <div className="flex items-center space-x-3 pt-2">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+                className="flex-1 py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
               >
                 Cancel
               </button>
@@ -460,9 +465,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   setShowClearConfirm(false);
                   showNotice('All local data wiped.');
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-accent-rose hover:bg-accent-rose/90 text-white font-medium text-xs transition"
+                className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md"
               >
-                Yes, Wipe Everything
+                YES, WIPE EVERYTHING
               </button>
             </div>
           </div>

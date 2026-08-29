@@ -242,7 +242,7 @@ export function analyzeIncidentPatterns(incidents: Incident[]): PatternInsightRe
       headline: 'No incidents logged yet',
       detailedAnalysis: 'Your timeline is currently clear. Any logged incidents will be analyzed here for repeating patterns, places, or subjects.',
       clusters: [],
-      suggestedActions: ['Keep EvidenceHer ready for any future documentation needs.']
+      suggestedActions: ['Keep NaariSaakshi ready for any future documentation needs.']
     };
   }
 

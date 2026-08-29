@@ -139,7 +139,7 @@ Under current Indian law, any police station is required to register a 'Zero FIR
   } else {
     // Personal record
     return `
-EVIDENCEHER — SECURE PERSONAL INCIDENT LOG
+NAARISAAKSHI — SECURE PERSONAL INCIDENT LOG
 EXPORT GENERATED ON: ${dateStr}
 OWNER: ${config.complainantName || 'Personal Journal'}
 
@@ -194,7 +194,7 @@ export function downloadPdfReport(incidents: Incident[], config: ReportConfig): 
   } else if (config.reportType === 'POLICE') {
     documentTitle = 'INCIDENT CHRONOLOGY LOG — LAW ENFORCEMENT DRAFT';
   } else if (config.reportType === 'PERSONAL') {
-    documentTitle = 'EVIDENCEHER — PERSONAL INCIDENT JOURNAL LOG';
+    documentTitle = 'NAARISAAKSHI — PERSONAL INCIDENT JOURNAL LOG';
   }
 
   // Helper for adding new page with consistent margins
@@ -462,10 +462,10 @@ export function downloadPdfReport(incidents: Incident[], config: ReportConfig): 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
-    doc.text(`EvidenceHer Private Log Report • Confidential`, leftMargin, pageHeight - 5);
+    doc.text(`NaariSaakshi Private Log Report • Confidential`, leftMargin, pageHeight - 5);
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - rightMargin - 18, pageHeight - 5);
   }
 
-  const fileName = `EvidenceHer_Report_${config.reportType}_${new Date().toISOString().slice(0, 10)}.pdf`;
+  const fileName = `NaariSaakshi_Report_${config.reportType}_${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);
 }
