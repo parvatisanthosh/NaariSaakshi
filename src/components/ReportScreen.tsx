@@ -100,178 +100,191 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
+    <div className="w-full space-y-10 pb-28 relative">
       
-      {/* Top Banner */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 shadow-sm space-y-2">
-        <div className="flex items-center space-x-2 text-teal-400 font-semibold text-xs uppercase tracking-wider">
-          <FileText className="w-4 h-4" />
-          <span>Complaint & Evidence Report Generator</span>
+      {/* SECTION 1: TOP BANNER (Light Cream Background #F5E7DE) */}
+      <section className="rounded-3xl bg-cream text-cream-ink p-8 sm:p-14 shadow-2xl border border-black/10 relative z-10 w-full space-y-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 rounded-2xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-lg">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-xs font-mono font-bold tracking-widest text-cream-ink/60 uppercase block">LEGAL & HR REPORT GENERATOR</span>
+            <h1 className="font-display text-4xl sm:text-6xl tracking-wide text-cream-ink leading-none">
+              COMPILE COMPLAINT-READY DOCUMENT
+            </h1>
+          </div>
         </div>
-        <h2 className="text-lg font-semibold text-charcoal-100">Compile Complaint-Ready Document</h2>
-        <p className="text-xs text-charcoal-300 leading-relaxed">
+
+        <p className="text-sm sm:text-base text-cream-ink/80 leading-relaxed font-medium max-w-4xl">
           Select target destination, enter details, and compile your timestamped incident logs into a clean, professional document ready for HR, POSH committees, or legal review.
         </p>
-      </div>
+      </section>
 
-      {/* 1. Target Format Selection */}
-      <div className="space-y-3">
-        <label className="block text-xs font-semibold text-charcoal-400 uppercase tracking-wider">
-          1. Choose Destination & Format Standard
-        </label>
+      {/* SECTION 2: DESTINATION FORMAT SELECTION (Light Cards) */}
+      <section className="space-y-4 relative z-10 w-full">
+        <h2 className="font-display text-2xl tracking-wider text-cream-ink uppercase">
+          1. CHOOSE DESTINATION & FORMAT STANDARD
+        </h2>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           
           <button
             onClick={() => setReportType('POSH')}
-            className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2 ${
+            className={`p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col justify-between space-y-4 shadow-lg ${
               reportType === 'POSH'
-                ? 'bg-teal-950/60 border-teal-500 shadow-md ring-1 ring-teal-500/40 text-teal-200'
-                : 'bg-charcoal-800/60 border-charcoal-700 text-charcoal-300 hover:border-charcoal-600'
+                ? 'bg-magenta text-bg-black border-magenta scale-[1.02] shadow-2xl'
+                : 'bg-white text-cream-ink border-black/10 hover:border-magenta/50 hover:bg-cream/40'
             }`}
           >
             <div className="flex items-center justify-between w-full">
-              <Building2 className={`w-5 h-5 ${reportType === 'POSH' ? 'text-teal-400' : 'text-charcoal-400'}`} />
-              {reportType === 'POSH' && <span className="w-2 h-2 rounded-full bg-teal-400"></span>}
+              <Building2 className={`w-7 h-7 ${reportType === 'POSH' ? 'text-bg-black' : 'text-magenta'}`} />
+              {reportType === 'POSH' && <span className="w-3 h-3 rounded-full bg-bg-black"></span>}
             </div>
             <div>
-              <span className="text-xs font-semibold block">HR / POSH Committee</span>
-              <span className="text-[10px] text-charcoal-400 block mt-0.5">Formal workplace complaint format</span>
+              <span className="font-display text-2xl block tracking-wide">HR / POSH COMMITTEE</span>
+              <span className={`text-xs block mt-1 font-medium ${reportType === 'POSH' ? 'text-bg-black/80' : 'text-cream-ink/70'}`}>
+                Formal workplace complaint format
+              </span>
             </div>
           </button>
 
           <button
             onClick={() => setReportType('POLICE')}
-            className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2 ${
+            className={`p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col justify-between space-y-4 shadow-lg ${
               reportType === 'POLICE'
-                ? 'bg-teal-950/60 border-teal-500 shadow-md ring-1 ring-teal-500/40 text-teal-200'
-                : 'bg-charcoal-800/60 border-charcoal-700 text-charcoal-300 hover:border-charcoal-600'
+                ? 'bg-magenta text-bg-black border-magenta scale-[1.02] shadow-2xl'
+                : 'bg-white text-cream-ink border-black/10 hover:border-magenta/50 hover:bg-cream/40'
             }`}
           >
             <div className="flex items-center justify-between w-full">
-              <ShieldAlert className={`w-5 h-5 ${reportType === 'POLICE' ? 'text-teal-400' : 'text-charcoal-400'}`} />
-              {reportType === 'POLICE' && <span className="w-2 h-2 rounded-full bg-teal-400"></span>}
+              <ShieldAlert className={`w-7 h-7 ${reportType === 'POLICE' ? 'text-bg-black' : 'text-magenta'}`} />
+              {reportType === 'POLICE' && <span className="w-3 h-3 rounded-full bg-bg-black"></span>}
             </div>
             <div>
-              <span className="text-xs font-semibold block">Police / Legal Draft</span>
-              <span className="text-[10px] text-charcoal-400 block mt-0.5">Fact statement for law enforcement</span>
+              <span className="font-display text-2xl block tracking-wide">POLICE / LEGAL DRAFT</span>
+              <span className={`text-xs block mt-1 font-medium ${reportType === 'POLICE' ? 'text-bg-black/80' : 'text-cream-ink/70'}`}>
+                Fact statement for law enforcement
+              </span>
             </div>
           </button>
 
           <button
             onClick={() => setReportType('PERSONAL')}
-            className={`p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2 ${
+            className={`p-6 rounded-3xl border text-left transition-all duration-300 flex flex-col justify-between space-y-4 shadow-lg ${
               reportType === 'PERSONAL'
-                ? 'bg-teal-950/60 border-teal-500 shadow-md ring-1 ring-teal-500/40 text-teal-200'
-                : 'bg-charcoal-800/60 border-charcoal-700 text-charcoal-300 hover:border-charcoal-600'
+                ? 'bg-magenta text-bg-black border-magenta scale-[1.02] shadow-2xl'
+                : 'bg-white text-cream-ink border-black/10 hover:border-magenta/50 hover:bg-cream/40'
             }`}
           >
             <div className="flex items-center justify-between w-full">
-              <BookOpen className={`w-5 h-5 ${reportType === 'PERSONAL' ? 'text-teal-400' : 'text-charcoal-400'}`} />
-              {reportType === 'PERSONAL' && <span className="w-2 h-2 rounded-full bg-teal-400"></span>}
+              <BookOpen className={`w-7 h-7 ${reportType === 'PERSONAL' ? 'text-bg-black' : 'text-magenta'}`} />
+              {reportType === 'PERSONAL' && <span className="w-3 h-3 rounded-full bg-bg-black"></span>}
             </div>
             <div>
-              <span className="text-xs font-semibold block">Personal Record</span>
-              <span className="text-[10px] text-charcoal-400 block mt-0.5">Chronological summary for self</span>
+              <span className="font-display text-2xl block tracking-wide">PERSONAL RECORD</span>
+              <span className={`text-xs block mt-1 font-medium ${reportType === 'PERSONAL' ? 'text-bg-black/80' : 'text-cream-ink/70'}`}>
+                Chronological summary for self
+              </span>
             </div>
           </button>
 
         </div>
-      </div>
+      </section>
 
-      {/* 2. Metadata Input Fields */}
-      <div className="bg-charcoal-800/60 border border-charcoal-700/80 rounded-2xl p-5 space-y-4 text-xs">
-        <label className="block font-semibold text-charcoal-400 uppercase tracking-wider">
-          2. Document Details & Parties Involved
-        </label>
+      {/* SECTION 3: METADATA INPUT FIELDS (Light White Card) */}
+      <section className="bg-white border border-black/10 rounded-3xl p-8 sm:p-10 space-y-6 text-sm shadow-xl relative z-10 w-full">
+        <h2 className="font-display text-2xl tracking-wider text-cream-ink uppercase">
+          2. DOCUMENT DETAILS & PARTIES INVOLVED
+        </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-charcoal-300 mb-1 font-medium">Complainant / Your Name</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Complainant / Your Name</label>
             <input
               type="text"
               value={complainantName}
               onChange={(e) => setComplainantName(e.target.value)}
               placeholder="e.g. Ananya Sharma"
-              className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl p-2.5 text-charcoal-100 focus:outline-none focus:border-teal-500"
+              className="w-full bg-cream/40 border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
             />
           </div>
 
-          <div>
-            <label className="block text-charcoal-300 mb-1 font-medium">Respondent / Accused Person</label>
+          <div className="space-y-2">
+            <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Respondent / Accused Person</label>
             <input
               type="text"
               value={respondentName}
               onChange={(e) => setRespondentName(e.target.value)}
               placeholder="e.g. Rohan Sharma"
-              className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl p-2.5 text-charcoal-100 focus:outline-none focus:border-teal-500"
+              className="w-full bg-cream/40 border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-charcoal-300 mb-1 font-medium">Department / Organization</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Department / Organization</label>
             <input
               type="text"
               value={organizationOrDept}
               onChange={(e) => setOrganizationOrDept(e.target.value)}
               placeholder="e.g. Engineering & Product Team"
-              className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl p-2.5 text-charcoal-100 focus:outline-none focus:border-teal-500"
+              className="w-full bg-cream/40 border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
             />
           </div>
 
-          <div>
-            <label className="block text-charcoal-300 mb-1 font-medium">Complainant Contact / Phone</label>
+          <div className="space-y-2">
+            <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Complainant Contact / Phone</label>
             <input
               type="text"
               value={complainantContact}
               onChange={(e) => setComplainantContact(e.target.value)}
               placeholder="e.g. +91 98765 43210"
-              className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl p-2.5 text-charcoal-100 focus:outline-none focus:border-teal-500"
+              className="w-full bg-cream/40 border border-black/10 rounded-2xl p-4 text-cream-ink font-semibold focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 3. Incident Checklist Selection */}
-      <div className="space-y-3 text-xs">
+      {/* SECTION 4: INCIDENT CHECKLIST SELECTION (Light White Section) */}
+      <section className="space-y-4 relative z-10 w-full">
         <div className="flex items-center justify-between">
-          <label className="font-semibold text-charcoal-400 uppercase tracking-wider">
-            3. Select Incidents to Include ({selectedIds.length} of {incidents.length})
-          </label>
+          <h2 className="font-display text-2xl tracking-wider text-cream-ink uppercase">
+            3. SELECT INCIDENTS TO INCLUDE ({selectedIds.length} OF {incidents.length})
+          </h2>
           <button
             onClick={toggleSelectAll}
-            className="text-teal-400 hover:underline font-medium text-xs"
+            className="text-magenta hover:underline font-bold text-xs uppercase tracking-wider"
           >
             {selectedIds.length === incidents.length ? 'Deselect All' : 'Select All'}
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {incidents.map(inc => {
             const isSelected = selectedIds.includes(inc.id);
             return (
               <div
                 key={inc.id}
                 onClick={() => toggleSelectIncident(inc.id)}
-                className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition ${
+                className={`p-5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all duration-300 shadow-sm ${
                   isSelected
-                    ? 'bg-charcoal-800 border-teal-500/60 text-charcoal-100'
-                    : 'bg-charcoal-900/40 border-charcoal-700/60 text-charcoal-400'
+                    ? 'bg-cream/90 border-magenta text-cream-ink shadow-md'
+                    : 'bg-white border-black/10 text-cream-ink/70 hover:bg-cream/30'
                 }`}
               >
-                <div className="flex items-center space-x-3 truncate pr-2">
+                <div className="flex items-center space-x-4 truncate pr-2">
                   {isSelected ? (
-                    <CheckSquare className="w-4 h-4 text-teal-400 shrink-0" />
+                    <CheckSquare className="w-5 h-5 text-magenta shrink-0" />
                   ) : (
-                    <Square className="w-4 h-4 text-charcoal-500 shrink-0" />
+                    <Square className="w-5 h-5 text-cream-ink/40 shrink-0" />
                   )}
-                  <div className="truncate">
-                    <span className="font-medium text-xs block text-charcoal-200 truncate">
+                  <div className="truncate space-y-0.5">
+                    <span className="font-bold text-sm block text-cream-ink truncate">
                       {inc.narrative_structured.summary}
                     </span>
-                    <span className="text-[10px] text-charcoal-400">
+                    <span className="text-xs font-mono font-medium text-cream-ink/60 block">
                       {new Date(inc.incident_datetime).toLocaleDateString()} • {inc.category} • {inc.location}
                     </span>
                   </div>
@@ -280,98 +293,98 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
             );
           })}
         </div>
-      </div>
+      </section>
 
-      {/* 4. Pre-Export Checklist Banner */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-4 space-y-2 text-xs">
+      {/* SECTION 5: PRE-EXPORT REQUIREMENTS CHECKLIST */}
+      <section className="bg-white border border-black/10 rounded-3xl p-6 sm:p-8 space-y-3 shadow-xl relative z-10 w-full text-xs">
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-charcoal-300 uppercase tracking-wider flex items-center space-x-1.5">
-            <CheckSquare className="w-4 h-4 text-teal-400" />
-            <span>4. Pre-Export Requirements Checklist</span>
+          <span className="font-display text-xl text-cream-ink uppercase tracking-wider flex items-center space-x-2">
+            <CheckSquare className="w-5 h-5 text-magenta" />
+            <span>4. PRE-EXPORT REQUIREMENTS CHECKLIST</span>
           </span>
           {checklistMissing.length === 0 ? (
-            <span className="text-[10px] text-teal-300 bg-teal-950 px-2 py-0.5 rounded-full border border-teal-800 font-semibold">
-              ✓ All Core Fields Complete
+            <span className="text-xs text-bg-black bg-magenta px-3 py-1 rounded-full font-bold shadow-sm">
+              ✓ ALL CORE FIELDS COMPLETE
             </span>
           ) : (
-            <span className="text-[10px] text-amber-300 bg-amber-950 px-2.5 py-0.5 rounded-full border border-amber-800 font-semibold">
-              {checklistMissing.length} Field{checklistMissing.length > 1 ? 's' : ''} Recommended
+            <span className="text-xs text-bg-black bg-amber-400 px-3 py-1 rounded-full font-bold shadow-sm">
+              {checklistMissing.length} FIELD{checklistMissing.length > 1 ? 'S' : ''} RECOMMENDED
             </span>
           )}
         </div>
 
         {checklistMissing.length > 0 ? (
-          <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-3 text-amber-200 space-y-1">
-            <p className="font-medium text-xs flex items-center space-x-1">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 inline mr-1" />
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-amber-900 space-y-1">
+            <p className="font-semibold text-xs flex items-center space-x-1.5">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 inline mr-1" />
               <span>
-                This report is missing: <strong className="text-amber-300 underline">{checklistMissing.join(', ')}</strong>.
+                This report is missing: <strong className="underline">{checklistMissing.join(', ')}</strong>.
               </span>
             </p>
-            <p className="text-[11px] text-amber-300/80 leading-relaxed pl-5">
+            <p className="text-xs text-amber-800/80 leading-relaxed pl-5 font-medium">
               You can still export, but adding these details may strengthen the complaint.
             </p>
           </div>
         ) : (
-          <p className="text-charcoal-300 text-[11px] leading-relaxed">
+          <p className="text-cream-ink/80 text-xs leading-relaxed font-medium">
             All essential fields (complainant, respondent, dates, locations, and descriptions) required for {reportType === 'POSH' ? 'POSH Committee' : reportType === 'POLICE' ? 'Police Complaint' : 'Personal Record'} are present in your selected entries.
           </p>
         )}
-      </div>
+      </section>
 
-      {/* Action Buttons */}
-      <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      {/* SECTION 6: ACTION BUTTONS */}
+      <section className="pt-4 flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full">
         <button
           onClick={() => setShowPreview(true)}
           disabled={selectedIds.length === 0}
-          className="w-full sm:flex-1 py-3 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-charcoal-200 font-medium text-xs transition border border-charcoal-700 flex items-center justify-center space-x-2 disabled:opacity-50"
+          className="w-full sm:flex-1 py-5 rounded-full border-2 border-magenta/60 bg-white text-cream-ink hover:bg-magenta hover:text-bg-black hover:border-magenta font-display font-bold text-xl tracking-wider transition-all duration-300 shadow-lg flex items-center justify-center space-x-2 disabled:opacity-50"
         >
-          <Eye className="w-4 h-4 text-teal-400" />
-          <span>Preview Document</span>
+          <Eye className="w-5 h-5" />
+          <span>PREVIEW DOCUMENT</span>
         </button>
 
         <button
           onClick={triggerDownloadPdf}
           disabled={selectedIds.length === 0}
-          className="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white font-medium text-xs transition shadow-lg shadow-teal-900/40 flex items-center justify-center space-x-2 disabled:opacity-50"
+          className="w-full sm:flex-1 py-5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-xl tracking-wider transition-all duration-300 shadow-xl shadow-magenta/30 hover:scale-[1.01] flex items-center justify-center space-x-2 disabled:opacity-50"
         >
           {downloadSuccess ? (
             <>
-              <Check className="w-4 h-4 text-white" />
-              <span>PDF Exported!</span>
+              <Check className="w-6 h-6" />
+              <span>PDF EXPORTED!</span>
             </>
           ) : (
             <>
-              <Download className="w-4 h-4" />
-              <span>Export Download PDF</span>
+              <Download className="w-6 h-6" />
+              <span>EXPORT DOWNLOAD PDF</span>
             </>
           )}
         </button>
-      </div>
+      </section>
 
       {/* UNENCRYPTED FILE WARNING MODAL */}
       {showExportConfirm && (
-        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center space-x-3 text-amber-400">
-              <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-base font-semibold text-charcoal-100">Unencrypted File Warning</h3>
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-md p-8 space-y-6 shadow-2xl text-cream-ink">
+            <div className="flex items-center space-x-3 text-magenta">
+              <AlertTriangle className="w-7 h-7" />
+              <h3 className="font-display text-3xl text-cream-ink leading-none">UNENCRYPTED FILE WARNING</h3>
             </div>
-            <p className="text-xs text-charcoal-300 leading-relaxed">
+            <p className="text-sm text-cream-ink/80 leading-relaxed font-medium">
               This file will be saved to your device without encryption. Make sure to store or delete it somewhere safe.
             </p>
             <div className="flex items-center space-x-3 pt-2">
               <button
                 onClick={() => setShowExportConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+                className="flex-1 py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDownloadPdf}
-                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition"
+                className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md"
               >
-                Acknowledge & Download PDF
+                ACKNOWLEDGE & DOWNLOAD PDF
               </button>
             </div>
           </div>
@@ -380,27 +393,27 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
 
       {/* DOCUMENT PREVIEW MODAL */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col p-6 shadow-2xl my-auto">
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-cream border border-black/10 rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col p-8 shadow-2xl my-auto text-cream-ink">
             
-            <div className="flex items-center justify-between border-b border-charcoal-700 pb-4 mb-4">
+            <div className="flex items-center justify-between border-b border-black/10 pb-4 mb-4">
               <div>
-                <h3 className="text-base font-semibold text-charcoal-100">Document Preview</h3>
-                <span className="text-xs text-charcoal-400">{reportType} Template • {selectedIds.length} Incidents</span>
+                <h3 className="font-display text-3xl text-cream-ink leading-none">DOCUMENT PREVIEW</h3>
+                <span className="text-xs font-mono font-bold text-cream-ink/60">{reportType} Template • {selectedIds.length} Incidents</span>
               </div>
-              <button onClick={() => setShowPreview(false)} className="text-charcoal-400 hover:text-charcoal-100">
+              <button onClick={() => setShowPreview(false)} className="text-cream-ink/60 hover:text-cream-ink font-bold text-xl">
                 ✕
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-charcoal-950 p-4 rounded-xl border border-charcoal-700/80 font-mono text-[11px] text-charcoal-200 leading-relaxed whitespace-pre-wrap select-text">
+            <div className="flex-1 overflow-y-auto bg-white p-6 rounded-2xl border border-black/10 font-mono text-xs text-cream-ink leading-relaxed whitespace-pre-wrap select-text shadow-inner">
               {previewText}
             </div>
 
-            <div className="pt-4 flex items-center justify-end space-x-3 border-t border-charcoal-700 mt-4">
+            <div className="pt-4 flex items-center justify-end space-x-3 border-t border-black/10 mt-4">
               <button
                 onClick={() => setShowPreview(false)}
-                className="px-4 py-2 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 text-xs font-medium"
+                className="px-6 py-3 rounded-full border border-black/20 text-cream-ink hover:bg-white font-bold text-xs uppercase tracking-wider transition"
               >
                 Close Preview
               </button>
@@ -409,9 +422,9 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
                   setShowPreview(false);
                   triggerDownloadPdf();
                 }}
-                className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-medium flex items-center space-x-1.5"
+                className="px-8 py-3 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md flex items-center space-x-2"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-4 h-4" />
                 <span>Download PDF</span>
               </button>
             </div>

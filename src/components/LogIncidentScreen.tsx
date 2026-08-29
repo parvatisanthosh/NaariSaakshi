@@ -397,15 +397,15 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
     const isEdited = touchedFields[fieldName];
     if (isEdited) {
       return (
-        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-950 text-teal-300 border border-teal-700/60 transition">
-          <Check className="w-3 h-3 text-teal-400" />
+        <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-magenta/20 text-magenta border border-magenta/40 transition">
+          <Check className="w-3 h-3 text-magenta" />
           <span>Edited</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-plum-950/80 text-plum-300 border border-plum-700/60">
-        <Sparkles className="w-2.5 h-2.5 text-plum-400" />
+      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-magenta border border-white/10">
+        <Sparkles className="w-2.5 h-2.5 text-magenta" />
         <span>AI-suggested</span>
       </span>
     );
@@ -416,14 +416,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       
       {/* Processing State Overlay */}
       {isProcessing && (
-        <div className="fixed inset-0 z-50 bg-charcoal-950/80 backdrop-blur-md flex flex-col items-center justify-center p-4">
-          <div className="bg-charcoal-800 border border-charcoal-700 rounded-3xl p-8 max-w-sm w-full text-center space-y-4 shadow-2xl">
-            <div className="w-14 h-14 rounded-full bg-teal-950/80 border border-teal-500/40 flex items-center justify-center text-teal-400 mx-auto">
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
+          <div className="bg-bg-black border border-white/10 rounded-2xl p-8 max-w-sm w-full text-center space-y-4 shadow-2xl film-grain">
+            <div className="w-14 h-14 rounded-full bg-magenta/20 border border-magenta/40 flex items-center justify-center text-magenta mx-auto">
               <Loader2 className="w-7 h-7 animate-spin" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-charcoal-100">{processingMessage}</h3>
-              <p className="text-xs text-charcoal-400">Extracting facts, dates, and people silently...</p>
+              <h3 className="font-display text-2xl text-text-light">{processingMessage}</h3>
+              <p className="text-xs text-text-muted">Extracting facts, dates, and people silently...</p>
             </div>
           </div>
         </div>
@@ -480,14 +480,15 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       )}
 
       {/* Top Banner Nudge */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-4 shadow-sm">
-        <div className="flex items-start space-x-3">
-          <div className="w-9 h-9 rounded-full bg-teal-950/80 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0 mt-0.5">
+      <div className="relative rounded-2xl bg-bg-black border border-white/10 p-5 film-grain overflow-hidden shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-r from-magenta/15 via-violet/10 to-transparent pointer-events-none" />
+        <div className="relative z-10 flex items-start space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-magenta/20 border border-magenta/40 flex items-center justify-center text-magenta shrink-0 mt-0.5">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-charcoal-100">Log an Incident</h2>
-            <p className="text-sm text-charcoal-300 mt-1 leading-relaxed">
+            <h1 className="font-display text-3xl tracking-wide text-text-light">LOG AN INCIDENT</h1>
+            <p className="text-sm text-text-muted mt-1 leading-relaxed">
               "Just say or type what happened in your own words. We'll quietly organize it into a structured, timestamped record for you."
             </p>
           </div>
@@ -495,17 +496,17 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       </div>
 
       {/* Mode Switcher Buttons */}
-      <div className="flex p-1 bg-charcoal-800/90 rounded-xl border border-charcoal-700/60">
+      <div className="flex p-1.5 bg-white/5 rounded-full border border-white/10">
         <button
           disabled={isProcessing}
           onClick={() => {
             setSpeechErrorMsg(null);
             setMode('voice');
           }}
-          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 disabled:opacity-50 ${
+          className={`flex-1 py-2.5 px-4 rounded-full text-xs font-semibold uppercase tracking-wider transition flex items-center justify-center space-x-2 disabled:opacity-50 ${
             mode === 'voice'
-              ? 'bg-teal-700 text-white shadow-md'
-              : 'text-charcoal-400 hover:text-charcoal-200'
+              ? 'bg-magenta text-bg-black shadow-md'
+              : 'text-text-muted hover:text-text-light'
           }`}
         >
           <Mic className="w-4 h-4" />
@@ -514,10 +515,10 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         <button
           disabled={isProcessing}
           onClick={() => setMode('text')}
-          className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center space-x-2 disabled:opacity-50 ${
+          className={`flex-1 py-2.5 px-4 rounded-full text-xs font-semibold uppercase tracking-wider transition flex items-center justify-center space-x-2 disabled:opacity-50 ${
             mode === 'text'
-              ? 'bg-teal-700 text-white shadow-md'
-              : 'text-charcoal-400 hover:text-charcoal-200'
+              ? 'bg-magenta text-bg-black shadow-md'
+              : 'text-text-muted hover:text-text-light'
           }`}
         >
           <Type className="w-4 h-4" />
@@ -543,7 +544,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
       {/* Voice Mode View */}
       {mode === 'voice' && (
-        <div className="bg-charcoal-800/50 border border-charcoal-700/60 rounded-2xl p-6 text-center space-y-6">
+        <div className="bg-bg-black border border-white/10 rounded-2xl p-6 text-center space-y-6 film-grain">
           <div className="flex flex-col items-center justify-center space-y-4">
             
             {/* Pulsing Mic Button */}
@@ -552,8 +553,8 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               onClick={handleInitiateRecording}
               className={`w-28 h-28 rounded-full flex items-center justify-center transition-all transform active:scale-95 border-4 shadow-xl disabled:opacity-50 ${
                 isRecording
-                  ? 'bg-accent-rose text-white border-accent-rose/40 animate-pulse ring-8 ring-accent-rose/20'
-                  : 'bg-teal-800 hover:bg-teal-700 text-teal-100 border-teal-600/40'
+                  ? 'bg-magenta text-bg-black border-magenta/40 animate-pulse ring-8 ring-magenta/20'
+                  : 'bg-magenta text-bg-black border-magenta/40 hover:bg-magenta-deep'
               }`}
             >
               {isRecording ? <MicOff className="w-12 h-12" /> : <Mic className="w-12 h-12" />}
@@ -562,15 +563,15 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             <div>
               {isRecording ? (
                 <div className="space-y-1">
-                  <span className="inline-block px-3 py-1 rounded-full bg-accent-rose/20 text-accent-rose text-xs font-semibold tracking-wide uppercase">
+                  <span className="inline-block px-3.5 py-1 rounded-full bg-magenta/20 text-magenta text-xs font-semibold tracking-wide uppercase">
                     Recording Live ({formatTime(recordingSeconds)})
                   </span>
-                  <p className="text-xs text-charcoal-400">Speak naturally. Tap button again when finished.</p>
+                  <p className="text-xs text-text-muted">Speak naturally. Tap button again when finished.</p>
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <span className="text-sm font-medium text-charcoal-200 block">Tap to start recording voice</span>
-                  <p className="text-xs text-charcoal-400">Speech is auto-transcribed securely on your device</p>
+                  <span className="text-sm font-semibold text-text-light block">Tap to start recording voice</span>
+                  <p className="text-xs text-text-muted">Speech is auto-transcribed securely on your device</p>
                 </div>
               )}
             </div>
@@ -580,7 +581,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               <button
                 disabled={isProcessing}
                 onClick={() => setMode('text')}
-                className="inline-flex items-center space-x-1.5 text-xs text-teal-400 hover:text-teal-300 font-medium px-3 py-1.5 rounded-lg bg-teal-950/40 border border-teal-500/20 hover:border-teal-500/40 transition disabled:opacity-50"
+                className="inline-flex items-center space-x-1.5 text-xs text-magenta hover:text-text-light font-semibold px-4 py-2 rounded-full bg-white/5 border border-magenta/40 transition disabled:opacity-50"
               >
                 <Type className="w-3.5 h-3.5" />
                 <span>Prefer typing? Switch to text input</span>
@@ -590,9 +591,9 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
           {/* Transcript Preview Box */}
           {inputText && (
-            <div className="text-left bg-charcoal-900/90 border border-charcoal-700/70 rounded-xl p-4 space-y-2">
-              <span className="text-xs font-semibold text-teal-400 uppercase tracking-wider block">Transcribed Text</span>
-              <p className="text-sm text-charcoal-200 leading-relaxed whitespace-pre-wrap">{inputText}</p>
+            <div className="text-left bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+              <span className="text-xs font-display tracking-wider text-magenta uppercase block">Transcribed Text</span>
+              <p className="text-sm text-text-light leading-relaxed whitespace-pre-wrap">{inputText}</p>
             </div>
           )}
         </div>
@@ -602,11 +603,11 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       {mode === 'text' && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-medium text-charcoal-300">
+            <label className="block text-xs font-semibold text-text-muted">
               Write what happened (include time, location, names, quotes if remembered):
             </label>
             {inputText && (
-              <span className="text-[10px] text-teal-400 bg-teal-950 px-2 py-0.5 rounded border border-teal-800">
+              <span className="text-[10px] text-magenta bg-white/5 px-2 py-0.5 rounded-full border border-magenta/40">
                 Preserved from voice
               </span>
             )}
@@ -618,19 +619,19 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             onChange={(e) => setInputText(e.target.value)}
             rows={7}
             placeholder="e.g. Rohan came to my desk at 4:30 PM in the 4th floor pantry. He stood over me, made unwelcome personal remarks about my appearance, and said..."
-            className="w-full bg-charcoal-900 border border-charcoal-700 focus:border-teal-500 rounded-2xl p-4 text-sm text-charcoal-100 placeholder-charcoal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 transition leading-relaxed disabled:opacity-50"
+            className="w-full bg-white/5 border border-white/10 focus:border-magenta rounded-2xl p-4 text-sm text-text-light placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-magenta/20 transition-all leading-relaxed disabled:opacity-50"
           />
         </div>
       )}
 
       {/* Evidentiary Attachment Options */}
-      <div className="bg-charcoal-800/40 border border-charcoal-700/50 rounded-2xl p-4 space-y-3">
+      <div className="bg-bg-black border border-white/10 rounded-2xl p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-xs font-semibold text-charcoal-200 uppercase tracking-wider">
-            <Paperclip className="w-4 h-4 text-teal-400" />
+          <div className="flex items-center space-x-2 text-xs font-semibold text-text-light uppercase tracking-wider">
+            <Paperclip className="w-4 h-4 text-magenta" />
             <span>Evidentiary Attachments</span>
           </div>
-          <span className="text-[10px] text-charcoal-400">Stored locally on device</span>
+          <span className="text-[10px] text-text-muted">Stored locally on device</span>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -638,14 +639,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             type="button"
             disabled={isProcessing}
             onClick={() => setShowCameraModal(true)}
-            className="px-3 py-2 rounded-xl bg-teal-950 hover:bg-teal-900 border border-teal-500/40 text-teal-300 text-xs font-medium flex items-center space-x-1.5 transition disabled:opacity-50"
+            className="px-3.5 py-2 rounded-full bg-magenta/15 hover:bg-magenta/25 border border-magenta/40 text-magenta text-xs font-semibold flex items-center space-x-1.5 transition disabled:opacity-50"
           >
             <Camera className="w-3.5 h-3.5" />
             <span>Take Watermarked Photo</span>
           </button>
 
-          <label className={`px-3 py-2 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 text-xs font-medium flex items-center space-x-1.5 transition cursor-pointer ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            <Paperclip className="w-3.5 h-3.5" />
+          <label className={`px-3.5 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-text-light text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}>
+            <Paperclip className="w-3.5 h-3.5 text-magenta" />
             <span>Upload File / Image</span>
             <input
               ref={fileInputRef}
@@ -661,19 +662,19 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         {/* List Attached Items */}
         <div className="space-y-2 pt-1">
           {voiceAudioAttachment && (
-            <div className="flex items-center justify-between bg-teal-950/40 border border-teal-500/40 rounded-xl p-3 text-xs">
-              <div className="flex items-center space-x-2 text-teal-300">
-                <Mic className="w-4 h-4 text-teal-400 shrink-0" />
+            <div className="flex items-center justify-between bg-white/5 border border-magenta/40 rounded-xl p-3 text-xs">
+              <div className="flex items-center space-x-2 text-magenta font-semibold">
+                <Mic className="w-4 h-4 text-magenta shrink-0" />
                 <div className="truncate max-w-[240px]">
                   <span className="font-semibold block">🎙️ Original Voice Recording</span>
-                  <span className="text-[10px] text-teal-400/80">Raw audio preserved alongside transcript</span>
+                  <span className="text-[10px] text-text-muted">Raw audio preserved alongside transcript</span>
                 </div>
               </div>
               <button
                 type="button"
                 disabled={isProcessing}
                 onClick={() => setVoiceAudioAttachment(null)}
-                className="text-charcoal-400 hover:text-accent-rose disabled:opacity-50"
+                className="text-text-muted hover:text-magenta disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -681,17 +682,17 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
           )}
 
           {attachmentsList.map((att) => (
-            <div key={att.id} className="flex items-center justify-between bg-charcoal-900/90 border border-charcoal-700 rounded-xl p-3 text-xs">
+            <div key={att.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3 text-xs">
               <div className="flex items-center space-x-2 truncate pr-2">
                 {att.isLiveCapture ? (
-                  <Camera className="w-4 h-4 text-teal-400 shrink-0" />
+                  <Camera className="w-4 h-4 text-magenta shrink-0" />
                 ) : (
-                  <Paperclip className="w-4 h-4 text-charcoal-400 shrink-0" />
+                  <Paperclip className="w-4 h-4 text-text-muted shrink-0" />
                 )}
                 <div className="truncate">
-                  <span className="text-charcoal-200 font-medium block truncate">{att.name}</span>
+                  <span className="text-text-light font-semibold block truncate">{att.name}</span>
                   {att.isLiveCapture && (
-                    <span className="text-[10px] text-teal-400 font-mono">📷 Live Watermarked Photo</span>
+                    <span className="text-[10px] text-magenta font-mono">📷 Live Watermarked Photo</span>
                   )}
                 </div>
               </div>
@@ -699,7 +700,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                 type="button"
                 disabled={isProcessing}
                 onClick={() => handleRemoveAttachment(att.id)}
-                className="text-charcoal-400 hover:text-accent-rose disabled:opacity-50"
+                className="text-text-muted hover:text-magenta disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -713,14 +714,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         <button
           disabled={isProcessing}
           onClick={onCancel}
-          className="flex-1 py-3 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-charcoal-300 font-medium text-sm transition disabled:opacity-50"
+          className="flex-1 py-3.5 rounded-full border border-magenta/50 text-magenta hover:bg-magenta/10 font-semibold text-xs uppercase tracking-wider transition disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           onClick={handleProcessSubmit}
           disabled={!inputText.trim() || isProcessing}
-          className="flex-1 py-3 rounded-xl bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white font-medium text-sm transition shadow-lg shadow-teal-900/40 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-semibold text-xs uppercase tracking-wider transition shadow-lg shadow-magenta/20 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <div className="flex items-center space-x-2">
@@ -738,22 +739,22 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
       {/* MANDATORY REVIEW & EDIT MODAL (Trust Requirement: User MUST confirm before saving) */}
       {showReviewModal && (
-        <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-charcoal-800 border border-charcoal-700 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl my-auto">
+        <div className="fixed inset-0 z-50 bg-bg-black/95 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-bg-black border border-white/10 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl my-auto">
             
-            <div className="flex items-start justify-between border-b border-charcoal-700 pb-4">
+            <div className="flex items-start justify-between border-b border-white/10 pb-4">
               <div>
-                <div className="flex items-center space-x-2 text-teal-400 text-xs font-semibold uppercase tracking-wider">
+                <div className="flex items-center space-x-2 text-magenta text-xs font-display tracking-wider uppercase">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Review AI Draft</span>
                 </div>
-                <h3 className="text-lg font-semibold text-charcoal-100 mt-1">Verify Extracted Fields</h3>
+                <h3 className="font-display text-2xl text-text-light mt-1">VERIFY EXTRACTED FIELDS</h3>
                 
-                <p className="text-xs text-teal-300 font-medium mt-1 bg-teal-950/60 border border-teal-500/30 px-3 py-1.5 rounded-lg inline-block">
+                <p className="text-xs text-text-muted font-medium mt-1 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full inline-block">
                   Review what I found — everything here is editable before you save.
                 </p>
               </div>
-              <button onClick={() => setShowReviewModal(false)} className="text-charcoal-400 hover:text-charcoal-100">
+              <button onClick={() => setShowReviewModal(false)} className="text-text-muted hover:text-text-light">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -763,7 +764,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               {/* Date & Time */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-charcoal-300 font-medium">Incident Date & Time</label>
+                  <label className="text-text-muted font-semibold">Incident Date & Time</label>
                   {renderFieldBadge('datetime')}
                 </div>
                 <input
@@ -773,9 +774,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     setEditDatetime(e.target.value);
                     markTouched('datetime');
                   }}
-                  className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                    touchedFields['datetime'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                  }`}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
                 />
               </div>
 
@@ -783,7 +782,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-charcoal-300 font-medium">Location</label>
+                    <label className="text-text-muted font-semibold">Location</label>
                     {renderFieldBadge('location')}
                   </div>
                   <div className="space-y-1.5">
@@ -795,9 +794,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         markTouched('location');
                       }}
                       placeholder="e.g. 4th Floor Conference Room"
-                      className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                        touchedFields['location'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                      }`}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
                     />
 
                     <div className="flex items-center justify-between pt-1">
@@ -805,7 +802,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         type="button"
                         onClick={handleGetLocation}
                         disabled={isLocating}
-                        className="inline-flex items-center space-x-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-charcoal-900 hover:bg-charcoal-700 text-teal-400 border border-teal-500/30 transition disabled:opacity-50"
+                        className="inline-flex items-center space-x-1.5 text-[11px] font-semibold px-3 py-1 rounded-full bg-magenta/15 hover:bg-magenta/25 text-magenta border border-magenta/40 transition disabled:opacity-50"
                       >
                         {isLocating ? (
                           <>
@@ -824,7 +821,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         <button
                           type="button"
                           onClick={handleClearLocationOptIn}
-                          className="text-[10px] text-charcoal-400 hover:text-accent-rose transition"
+                          className="text-[10px] text-text-muted hover:text-magenta transition"
                         >
                           Remove coordinates
                         </button>
@@ -838,20 +835,20 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       </p>
                     )}
 
-                    <p className="text-[10px] text-charcoal-400 leading-tight">
+                    <p className="text-[10px] text-text-muted leading-tight">
                       Location is optional and only used to help you spot patterns — it's never shared unless you export a report.
                     </p>
 
                     {locationOptIn && capturedCoords && (
-                      <div className="bg-charcoal-900/90 border border-teal-500/30 p-2.5 rounded-xl space-y-1 mt-2">
+                      <div className="bg-white/5 border border-magenta/30 p-2.5 rounded-xl space-y-1 mt-2">
                         <label className="flex items-start space-x-2 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={contributeSignalOptIn}
                             onChange={(e) => setContributeSignalOptIn(e.target.checked)}
-                            className="mt-0.5 rounded bg-charcoal-800 border-charcoal-600 text-teal-600 focus:ring-teal-500 shrink-0"
+                            className="mt-0.5 rounded bg-bg-black border-white/20 text-magenta focus:ring-magenta shrink-0"
                           />
-                          <span className="text-[11px] text-teal-200/90 leading-snug">
+                          <span className="text-[11px] text-text-muted leading-snug">
                             Anonymously contribute this incident's location and category to a shared safety signal for other users nearby. Your name, details, and identity are never included — only an anonymous count.
                           </span>
                         </label>
@@ -862,7 +859,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-charcoal-300 font-medium">Category</label>
+                    <label className="text-text-muted font-semibold">Category</label>
                     {renderFieldBadge('category')}
                   </div>
                   <select
@@ -871,9 +868,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       setEditCategory(e.target.value as CategoryType);
                       markTouched('category');
                     }}
-                    className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                      touchedFields['category'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                    }`}
+                    className="w-full bg-bg-black border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
                   >
                     <option value="Verbal">Verbal</option>
                     <option value="Physical">Physical</option>
@@ -891,7 +886,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-charcoal-300 font-medium">Person Involved (Name)</label>
+                    <label className="text-text-muted font-semibold">Person Involved (Name)</label>
                     {renderFieldBadge('personName')}
                   </div>
                   <input
@@ -902,15 +897,13 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       markTouched('personName');
                     }}
                     placeholder="e.g. Rohan Sharma"
-                    className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                      touchedFields['personName'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                    }`}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-charcoal-300 font-medium">Role / Relationship</label>
+                    <label className="text-text-muted font-semibold">Role / Relationship</label>
                     {renderFieldBadge('personRole')}
                   </div>
                   <input
@@ -921,9 +914,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       markTouched('personRole');
                     }}
                     placeholder="e.g. Manager, Senior Lead"
-                    className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                      touchedFields['personRole'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                    }`}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
                   />
                 </div>
               </div>
@@ -931,7 +922,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               {/* Auto Summary */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-charcoal-300 font-medium">Auto-Generated Summary</label>
+                  <label className="text-text-muted font-semibold">Auto-Generated Summary</label>
                   {renderFieldBadge('summary')}
                 </div>
                 <input
@@ -941,16 +932,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     setEditSummary(e.target.value);
                     markTouched('summary');
                   }}
-                  className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                    touchedFields['summary'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                  }`}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
                 />
               </div>
 
               {/* Witnesses */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-charcoal-300 font-medium">Witnesses (Comma Separated)</label>
+                  <label className="text-text-muted font-semibold">Witnesses (Comma Separated)</label>
                   {renderFieldBadge('witnesses')}
                 </div>
                 <input
@@ -961,16 +950,14 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     markTouched('witnesses');
                   }}
                   placeholder="e.g. Priya Nair, Security Guard"
-                  className={`w-full bg-charcoal-900 border rounded-xl p-2.5 text-charcoal-100 focus:outline-none transition ${
-                    touchedFields['witnesses'] ? 'border-teal-500/80 ring-1 ring-teal-500/20' : 'border-charcoal-700 focus:border-teal-500'
-                  }`}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-text-light focus:outline-none focus:border-magenta transition-all"
                 />
               </div>
 
               {/* Severity Rating */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-charcoal-300 font-medium">Self-Rated Severity (1 to 5)</label>
+                  <label className="text-text-muted font-semibold">Self-Rated Severity (1 to 5)</label>
                   {renderFieldBadge('severity')}
                 </div>
                 <div className="flex space-x-2">
@@ -982,10 +969,10 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                         setEditSeverity(rating);
                         markTouched('severity');
                       }}
-                      className={`flex-1 py-2 rounded-lg font-medium transition ${
+                      className={`flex-1 py-2 rounded-xl font-semibold transition-all ${
                         editSeverity === rating
-                          ? 'bg-teal-600 text-white shadow-md'
-                          : 'bg-charcoal-900 text-charcoal-400 border border-charcoal-700'
+                          ? 'bg-magenta text-bg-black shadow-md'
+                          : 'bg-white/5 text-text-muted border border-white/10'
                       }`}
                     >
                       {rating}
@@ -997,16 +984,16 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center space-x-3 pt-3 border-t border-charcoal-700">
+            <div className="flex items-center space-x-3 pt-3 border-t border-white/10">
               <button
                 onClick={() => setShowReviewModal(false)}
-                className="flex-1 py-2.5 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-medium text-xs transition"
+                className="flex-1 py-3 rounded-full border border-magenta/50 text-magenta hover:bg-magenta/10 font-semibold text-xs uppercase tracking-wider transition"
               >
                 Back to Editing Text
               </button>
               <button
                 onClick={handleFinalSave}
-                className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition shadow-lg shadow-teal-900/50 flex items-center justify-center space-x-1"
+                className="flex-1 py-3 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-semibold text-xs uppercase tracking-wider transition shadow-lg flex items-center justify-center space-x-1"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Confirm & Save Log</span>

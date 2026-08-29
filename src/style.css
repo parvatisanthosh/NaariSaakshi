@@ -5,9 +5,87 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-black: #0D0B10;
+    --magenta: #E8368F;
+    --magenta-deep: #B81F6B;
+    --violet: #7C5CFF;
+    --cream: #F5E7DE;
+    --cream-ink: #1A1410;
+    --text-light: #F5F1F3;
+    --text-muted: #c9c3cc;
+  }
+
   body {
-    @apply bg-charcoal-900 text-charcoal-100 antialiased min-h-screen selection:bg-teal-700 selection:text-white;
+    @apply bg-bg-black text-text-light antialiased min-h-screen selection:bg-magenta selection:text-bg-black relative;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-color: var(--bg-black);
+    color: var(--text-light);
+  }
+
+  /* Faint global static grain background */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.04em;
+  }
+
+  /* Keyboard focus states */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--bg-black), 0 0 0 4px var(--magenta) !important;
+  }
+}
+
+/* Ambient Film Grain Animation (Used on Marketing Homepage) */
+@keyframes grain-pan {
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 100px; }
+}
+
+.film-grain {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 3px 3px;
+  animation: grain-pan 6s steps(10) infinite;
+}
+
+/* Drifting Duotone Skyline Animation */
+@keyframes sway {
+  0%, 100% { transform: translateX(-3%); }
+  50% { transform: translateX(3%); }
+}
+
+.drifting-skyline {
+  animation: sway 10s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-grain {
+    animation: none !important;
+  }
+  .drifting-skyline {
+    animation: none !important;
+    transform: none !important;
+  }
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -18,16 +96,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(30, 34, 40, 0.5);
+  background: var(--bg-black);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(88, 100, 115, 0.4);
+  background: rgba(232, 54, 143, 0.4);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(13, 148, 136, 0.6);
+  background: var(--magenta);
 }
 
 /* Leaflet Dark Mode Customizations */

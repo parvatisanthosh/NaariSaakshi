@@ -7,55 +7,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        teal: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6',
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
-          950: '#042f2e',
+        'bg-black': {
+          DEFAULT: '#0D0B10',
         },
-        plum: {
-          50: '#faf5ff',
-          100: '#f3e8ff',
-          200: '#e9d5ff',
-          300: '#d8b4fe',
-          400: '#c084fc',
-          500: '#a855f7',
-          600: '#9333ea',
-          700: '#7e22ce',
-          800: '#6b21a8',
-          900: '#581c87',
-          950: '#3b0764',
+        magenta: {
+          DEFAULT: '#E8368F',
+          deep: '#B81F6B',
         },
-        charcoal: {
-          50: '#f6f7f8',
-          100: '#eceef0',
-          200: '#d8dce0',
-          300: '#b6bec6',
-          400: '#8e9aa7',
-          500: '#707d8c',
-          600: '#586473',
-          700: '#48515e',
-          800: '#2d333c',
-          900: '#1e2228',
-          950: '#121519',
+        violet: {
+          DEFAULT: '#7C5CFF',
         },
-        accent: {
-          amber: '#f59e0b',
-          rose: '#f43f5e',
-          emerald: '#10b981',
-          indigo: '#6366f1',
-        }
+        cream: {
+          DEFAULT: '#F5E7DE',
+          ink: '#1A1410',
+        },
+        text: {
+          light: '#F5F1F3',
+          muted: '#c9c3cc',
+        },
+        // Category tag specific colors
+        catVerbal: '#a8a2a8',
+        catPhysical: '#f5a585',
+        catDigital: '#7fd4d9',
+        catStalking: '#b3a1ff',
+        catQuidProQuo: '#e8b464',
       },
       fontFamily: {
+        display: ['"Bebas Neue"', 'sans-serif'],
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
       }
     },
   },

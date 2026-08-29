@@ -142,10 +142,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   demoMode: true
 };
 
-const STORAGE_KEY_INCIDENTS = 'evidenceher_incidents_v1';
-const STORAGE_KEY_SETTINGS = 'evidenceher_settings_v1';
-const STORAGE_KEY_SALT = 'evidenceher_salt_v1';
-const STORAGE_KEY_DEVICE_SECRET = 'evidenceher_device_secret_v1';
+const STORAGE_KEY_INCIDENTS = 'naarisaakshi_incidents_v1';
+const STORAGE_KEY_SETTINGS = 'naarisaakshi_settings_v1';
+const STORAGE_KEY_SALT = 'naarisaakshi_salt_v1';
+const STORAGE_KEY_DEVICE_SECRET = 'naarisaakshi_device_secret_v1';
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);

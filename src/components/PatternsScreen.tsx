@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2, Globe } from 'lucide-react';
+import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2, Globe, FileText, ArrowRight, Shield } from 'lucide-react';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { Incident } from '../types';
@@ -13,21 +13,18 @@ interface PatternsScreenProps {
 }
 
 const createCustomPinIcon = (count: number) => {
-  let size = 28;
-  let bgColor = '#0f766e'; // teal-700
-  let borderColor = '#2dd4bf'; // teal-400
-  let fontSize = '11px';
+  let size = 32;
+  let bgColor = '#E8368F'; // magenta
+  let borderColor = '#B81F6B';
 
   if (count === 2) {
-    size = 34;
-    bgColor = '#b45309'; // amber-700
-    borderColor = '#f59e0b'; // amber-500
-    fontSize = '12px';
+    size = 38;
+    bgColor = '#7C5CFF'; // violet
+    borderColor = '#5B3BE0';
   } else if (count >= 3) {
-    size = 40;
-    bgColor = '#9f1239'; // rose-800
-    borderColor = '#f43f5e'; // rose-500
-    fontSize = '13px';
+    size = 44;
+    bgColor = '#E8368F'; // magenta
+    borderColor = '#1A1410';
   }
 
   return L.divIcon({
@@ -36,16 +33,16 @@ const createCustomPinIcon = (count: number) => {
       width: ${size}px;
       height: ${size}px;
       background-color: ${bgColor};
-      border: 2px solid ${borderColor};
+      border: 3px solid ${borderColor};
       border-radius: 50%;
-      color: white;
+      color: #0D0B10;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: ${fontSize};
-      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      font-family: 'Bebas Neue', system-ui, sans-serif;
     ">${count}</div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
@@ -95,132 +92,137 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
     }
   }, [userLocations]);
 
-  const getRiskBadgeColor = (level: string) => {
-    switch (level) {
-      case 'High':
-      case 'Elevated':
-        return 'bg-plum-950 text-plum-300 border-plum-500/50';
-      case 'Moderate':
-        return 'bg-amber-950 text-amber-300 border-amber-500/50';
-      default:
-        return 'bg-teal-950 text-teal-300 border-teal-500/50';
-    }
-  };
-
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
+    <div className="w-full space-y-10 pb-28 relative">
       
-      {/* Title & Purpose Header */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 shadow-sm space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-teal-400 font-semibold text-xs uppercase tracking-wider">
-            <PieChart className="w-4 h-4" />
-            <span>AI Pattern Detection & Insights</span>
+      {/* SECTION 1: HERO TITLE BANNER (Light Cream Background #F5E7DE) */}
+      <section className="rounded-3xl bg-cream text-cream-ink p-8 sm:p-14 shadow-2xl border border-black/10 relative z-10 w-full space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-cream-ink/10 pb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 rounded-2xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-lg">
+              <PieChart className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="text-xs font-mono font-bold tracking-widest text-cream-ink/60 uppercase block">AI ESCALATION ENGINE</span>
+              <h1 className="font-display text-4xl sm:text-6xl tracking-wide text-cream-ink leading-none">
+                PATTERN DETECTION & INSIGHTS
+              </h1>
+            </div>
           </div>
-          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getRiskBadgeColor(analysis.overallRiskLevel)}`}>
+
+          <span className="px-5 py-2 rounded-full font-display text-base font-bold tracking-wider bg-magenta text-bg-black shadow-md border border-magenta-deep shrink-0 uppercase">
             {analysis.overallRiskLevel} Risk Pattern
           </span>
         </div>
 
-        <h2 className="text-lg font-semibold text-charcoal-100">{analysis.headline}</h2>
-        
-        <p className="text-xs text-charcoal-300 leading-relaxed pt-1 border-t border-charcoal-700/50">
-          "This view exists to help you see connections and frequency trends across time that you might be too close to notice day-to-day."
-        </p>
-      </div>
+        <div className="space-y-3 max-w-4xl">
+          <h2 className="font-display text-3xl sm:text-5xl text-cream-ink tracking-wide leading-tight">
+            {analysis.headline}
+          </h2>
+          <p className="text-sm sm:text-base text-cream-ink/80 leading-relaxed font-medium">
+            "This view exists to help you see connections and frequency trends across time that you might be too close to notice day-to-day."
+          </p>
+        </div>
+      </section>
 
-      {/* Narrative AI Analysis Card */}
-      <div className="bg-charcoal-800/50 border border-charcoal-700/60 rounded-2xl p-5 space-y-3">
-        <h3 className="text-xs font-semibold text-charcoal-200 uppercase tracking-wider flex items-center space-x-1.5">
-          <Info className="w-4 h-4 text-teal-400" />
-          <span>Pattern Synthesis</span>
-        </h3>
-        <p className="text-xs text-charcoal-200 leading-relaxed">
+      {/* SECTION 2: AI PATTERN SYNTHESIS CARD (Light Card) */}
+      <section className="rounded-3xl bg-white text-cream-ink p-8 sm:p-10 shadow-xl border border-black/10 space-y-4 relative z-10 w-full">
+        <div className="flex items-center space-x-2 text-magenta">
+          <Info className="w-5 h-5 text-magenta" />
+          <h3 className="font-display text-2xl tracking-wider text-cream-ink uppercase">PATTERN SYNTHESIS</h3>
+        </div>
+        <p className="text-sm sm:text-base text-cream-ink/90 leading-relaxed font-medium">
           {analysis.detailedAnalysis}
         </p>
-      </div>
+      </section>
 
-      {/* Cluster Groupings: By Person */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider">Grouped by Person Involved</h3>
+      {/* SECTION 3: CLUSTER GROUPINGS BY PERSON (Light Cards Container) */}
+      <section className="space-y-6 relative z-10 w-full">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-3xl tracking-wider text-cream-ink uppercase">GROUPED BY PERSON INVOLVED</h3>
+          <span className="text-xs font-mono font-bold text-cream-ink/60 uppercase">EVIDENCE CLUSTERS</span>
+        </div>
         
         {analysis.clusters.filter(c => c.type === 'person').length === 0 ? (
-          <div className="bg-charcoal-800/30 border border-charcoal-700/50 rounded-xl p-4 text-xs text-charcoal-400">
+          <div className="rounded-3xl bg-white p-8 text-sm text-cream-ink/70 font-medium border border-black/10 text-center">
             No repeated individuals detected across multiple entries yet.
           </div>
         ) : (
           analysis.clusters.filter(c => c.type === 'person').map((cluster, i) => (
-            <div key={i} className="bg-charcoal-800/90 border border-charcoal-700 rounded-2xl p-4 space-y-3 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-plum-950 border border-plum-500/40 flex items-center justify-center text-plum-300 font-bold text-xs">
+            <div key={i} className="rounded-3xl bg-white p-6 sm:p-8 space-y-6 shadow-xl border border-black/10 transition-all duration-300 hover:shadow-2xl">
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/10 pb-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-full bg-magenta text-bg-black font-display font-bold text-2xl flex items-center justify-center shadow-md shrink-0">
                     {cluster.count}x
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-charcoal-100">{cluster.key}</h4>
-                    <span className="text-[11px] text-charcoal-400">
-                      Active: {new Date(cluster.firstSeen).toLocaleDateString()} – {new Date(cluster.lastSeen).toLocaleDateString()}
+                    <h4 className="font-display text-3xl text-cream-ink tracking-wide">{cluster.key}</h4>
+                    <span className="text-xs font-mono font-bold text-cream-ink/60">
+                      ACTIVE RANGE: {new Date(cluster.firstSeen).toLocaleDateString()} – {new Date(cluster.lastSeen).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
 
-                <span className="text-[10px] font-mono px-2 py-1 rounded bg-plum-900/60 text-plum-300 border border-plum-700/50">
-                  Escalation Score: {cluster.escalationScore}/10
+                <span className="px-4 py-1.5 rounded-full font-display text-sm font-bold bg-cream text-cream-ink border border-black/10 shadow-sm shrink-0">
+                  ESCALATION SCORE: {cluster.escalationScore}/10
                 </span>
               </div>
 
-              <p className="text-xs text-charcoal-300 leading-relaxed bg-charcoal-900/50 p-2.5 rounded-xl border border-charcoal-700/40">
+              <p className="text-sm text-cream-ink/90 leading-relaxed font-medium bg-cream/50 p-5 rounded-2xl border border-black/5">
                 {cluster.description}
               </p>
 
               {/* Related Incident Cards */}
-              <div className="space-y-2 pt-1">
+              <div className="space-y-3 pt-2">
+                <span className="text-xs font-mono font-bold text-cream-ink/60 uppercase block">CONNECTED INCIDENT LOGS:</span>
                 {cluster.incidents.map(inc => (
                   <div
                     key={inc.id}
                     onClick={() => onSelectIncident(inc)}
-                    className="flex items-center justify-between bg-charcoal-900/80 hover:bg-charcoal-900 p-2.5 rounded-xl border border-charcoal-700/60 cursor-pointer text-xs text-charcoal-200 transition group"
+                    className="flex items-center justify-between bg-cream/40 hover:bg-magenta hover:text-bg-black p-4 rounded-2xl border border-black/10 cursor-pointer text-sm font-medium transition-all duration-300 group shadow-sm"
                   >
-                    <div className="truncate pr-2">
-                      <span className="text-teal-400 font-medium mr-2">[{inc.category}]</span>
-                      <span className="truncate">{inc.narrative_structured.summary}</span>
+                    <div className="truncate pr-3 flex items-center space-x-3">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-white text-cream-ink border border-black/10 group-hover:bg-bg-black group-hover:text-magenta transition-colors">
+                        {inc.category}
+                      </span>
+                      <span className="truncate text-cream-ink group-hover:text-bg-black font-semibold">
+                        {inc.narrative_structured.summary}
+                      </span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-charcoal-400 group-hover:text-teal-300 shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-cream-ink group-hover:text-bg-black shrink-0 transition-transform group-hover:translate-x-1" />
                   </div>
                 ))}
               </div>
             </div>
           ))
         )}
-      </div>
+      </section>
 
-      {/* Location Hotspots Section */}
-      <div className="space-y-3">
+      {/* SECTION 4: LOCATION HOTSPOTS MAP (Light Container) */}
+      <section className="space-y-6 relative z-10 w-full">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold text-charcoal-400 uppercase tracking-wider flex items-center space-x-1.5">
-            <MapPin className="w-4 h-4 text-teal-400" />
-            <span>Location Hotspots</span>
+          <h3 className="font-display text-3xl tracking-wider text-cream-ink uppercase flex items-center space-x-2">
+            <MapPin className="w-6 h-6 text-magenta" />
+            <span>LOCATION HOTSPOTS & COMMUNITY SIGNALS</span>
           </h3>
           {locationGroups.length > 0 && (
-            <span className="text-[11px] text-teal-300 bg-teal-950 px-2.5 py-0.5 rounded-full border border-teal-800 font-medium">
-              {locationGroups.length} Hotspot Location{locationGroups.length > 1 ? 's' : ''}
+            <span className="font-display text-lg font-bold text-bg-black bg-magenta px-4 py-1 rounded-full shadow-md">
+              {locationGroups.length} HOTSPOT LOCATION{locationGroups.length > 1 ? 'S' : ''}
             </span>
           )}
         </div>
         
         {locationGroups.length === 0 ? (
-          <div className="bg-charcoal-800/40 border border-charcoal-700/60 rounded-2xl p-8 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-charcoal-700/60 border border-charcoal-600 flex items-center justify-center text-charcoal-400 mx-auto">
-              <MapPin className="w-6 h-6" />
-            </div>
-            <h4 className="text-sm font-semibold text-charcoal-200">No Location Coordinates Recorded</h4>
-            <p className="text-xs text-charcoal-400 max-w-md mx-auto leading-relaxed">
-              Location patterns will appear here once you add location data to your entries.
+          <div className="rounded-3xl bg-white p-8 text-sm text-cream-ink/70 font-medium border border-black/10 text-center space-y-2">
+            <p className="font-semibold text-cream-ink">No Location Coordinates Recorded</p>
+            <p className="text-xs text-cream-ink/60 max-w-md mx-auto leading-relaxed">
+              Location hotspots will appear on an interactive map once you add location data to your entries.
             </p>
           </div>
         ) : (
-          <div className="bg-charcoal-800/80 border border-charcoal-700 rounded-2xl p-3 space-y-2 shadow-lg">
-            <div className="h-72 w-full rounded-xl overflow-hidden relative border border-charcoal-700/80">
+          <div className="rounded-3xl bg-white p-4 space-y-4 shadow-xl border border-black/10">
+            <div className="h-80 w-full rounded-2xl overflow-hidden relative border border-black/10 shadow-inner">
               <MapContainer
                 center={[locationGroups[0].lat, locationGroups[0].lng]}
                 zoom={14}
@@ -228,8 +230,8 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                 style={{ height: '100%', width: '100%' }}
               >
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
                 {/* Community Signal Layer (Anonymous, Aggregated) */}
@@ -239,39 +241,23 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                     center={[signal.lat, signal.lng]}
                     radius={120 + Math.min(signal.count * 30, 200)}
                     pathOptions={{
-                      color: '#06b6d4',
-                      fillColor: '#0891b2',
+                      color: '#E8368F',
+                      fillColor: '#E8368F',
                       fillOpacity: 0.25,
                       weight: 2,
                       dashArray: '4, 4'
                     }}
                   >
                     <Popup>
-                      <div className="space-y-2 text-xs max-w-xs">
-                        <div className="border-b border-charcoal-700 pb-1 flex items-center justify-between">
-                          <span className="font-bold text-cyan-300 text-xs flex items-center space-x-1">
-                            <Globe className="w-3.5 h-3.5 text-cyan-400 inline mr-1" />
+                      <div className="space-y-2 text-xs max-w-xs font-sans">
+                        <div className="border-b border-black/10 pb-1 flex items-center justify-between">
+                          <span className="font-bold text-magenta text-xs flex items-center space-x-1">
+                            <Globe className="w-3.5 h-3.5 text-magenta inline mr-1" />
                             <span>Community Signal (Anonymous)</span>
                           </span>
                         </div>
-                        <p className="text-charcoal-200 font-semibold">
+                        <p className="text-cream-ink font-semibold">
                           {signal.count} anonymous report{signal.count > 1 ? 's' : ''} in this grid area (~100m)
-                        </p>
-                        <div className="bg-charcoal-900/90 p-2 rounded-lg border border-charcoal-700 space-y-1 text-[11px]">
-                          <span className="font-medium text-charcoal-400 block uppercase text-[10px]">
-                            Category Breakdown:
-                          </span>
-                          <div className="grid grid-cols-2 gap-1 text-charcoal-300 text-[10px]">
-                            {signal.categoryBreakdown.verbal > 0 && <span>• Verbal: {signal.categoryBreakdown.verbal}</span>}
-                            {signal.categoryBreakdown.physical > 0 && <span>• Physical: {signal.categoryBreakdown.physical}</span>}
-                            {signal.categoryBreakdown.digital > 0 && <span>• Digital: {signal.categoryBreakdown.digital}</span>}
-                            {signal.categoryBreakdown.stalking > 0 && <span>• Stalking: {signal.categoryBreakdown.stalking}</span>}
-                            {signal.categoryBreakdown.quid_pro_quo > 0 && <span>• Quid Pro Quo: {signal.categoryBreakdown.quid_pro_quo}</span>}
-                            {signal.categoryBreakdown.other > 0 && <span>• Other: {signal.categoryBreakdown.other}</span>}
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-charcoal-400 italic border-t border-charcoal-700/50 pt-1 leading-snug">
-                          No names or details are ever stored or accessible.
                         </p>
                       </div>
                     </Popup>
@@ -285,12 +271,12 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                     icon={createCustomPinIcon(group.incidents.length)}
                   >
                     <Popup>
-                      <div className="space-y-2 text-xs max-w-xs">
-                        <div className="border-b border-charcoal-700 pb-1.5 flex items-center justify-between gap-2">
-                          <span className="font-bold text-teal-300 text-xs truncate">
+                      <div className="space-y-2 text-xs max-w-xs font-sans">
+                        <div className="border-b border-black/10 pb-1.5 flex items-center justify-between gap-2">
+                          <span className="font-bold text-cream-ink text-xs truncate">
                             📍 {group.locationName || 'Saved Location'}
                           </span>
-                          <span className="text-[10px] bg-teal-950 px-1.5 py-0.5 rounded text-teal-300 border border-teal-800 shrink-0 font-semibold">
+                          <span className="text-[10px] bg-magenta px-2 py-0.5 rounded-full text-bg-black font-bold shrink-0">
                             {group.incidents.length} incident{group.incidents.length > 1 ? 's' : ''}
                           </span>
                         </div>
@@ -299,19 +285,15 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                             <div
                               key={inc.id}
                               onClick={() => onSelectIncident(inc)}
-                              className="p-2 bg-charcoal-800 hover:bg-charcoal-700 rounded-lg border border-charcoal-700/60 cursor-pointer transition text-[11px] group"
+                              className="p-2 bg-cream/40 hover:bg-magenta hover:text-bg-black rounded-lg border border-black/10 cursor-pointer transition text-[11px] group"
                             >
-                              <div className="flex items-center justify-between text-charcoal-400 text-[10px] mb-0.5">
+                              <div className="flex items-center justify-between text-cream-ink/70 text-[10px] mb-0.5">
                                 <span>{new Date(inc.incident_datetime).toLocaleDateString()}</span>
-                                <span className="text-teal-400 font-semibold">[{inc.category}]</span>
+                                <span className="text-magenta group-hover:text-bg-black font-semibold">[{inc.category}]</span>
                               </div>
-                              <p className="text-charcoal-100 font-medium line-clamp-2">
+                              <p className="text-cream-ink group-hover:text-bg-black font-semibold line-clamp-2">
                                 {inc.narrative_structured.summary}
                               </p>
-                              <div className="flex items-center space-x-1 text-teal-400 text-[10px] mt-1 group-hover:text-teal-300 font-medium">
-                                <span>Open incident detail</span>
-                                <ChevronRight className="w-3 h-3" />
-                              </div>
                             </div>
                           ))}
                         </div>
@@ -321,49 +303,53 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                 ))}
               </MapContainer>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-charcoal-300 pt-2 border-t border-charcoal-700/50">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-teal-600 border border-teal-400"></div>
+
+            <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-cream-ink font-medium pt-2 border-t border-black/10">
+              <div className="flex items-center space-x-2">
+                <div className="w-3.5 h-3.5 rounded-full bg-magenta border border-magenta-deep shadow-sm"></div>
                 <span>Your Personal Incident Pins</span>
               </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-cyan-600/40 border border-cyan-400 border-dashed"></div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3.5 h-3.5 rounded-full bg-magenta/30 border border-magenta border-dashed"></div>
                 <span>Community signal (anonymous, aggregated)</span>
               </div>
             </div>
 
-            <p className="text-[11px] text-charcoal-400 text-center leading-relaxed">
+            <p className="text-xs text-cream-ink/70 text-center leading-relaxed font-medium">
               This shows how many people have anonymously reported something nearby — never who, never what happened. It's a safety signal, not a search tool.
             </p>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Recommended Next Actions */}
-      <div className="bg-gradient-to-r from-teal-950/60 to-charcoal-800 border border-teal-500/30 rounded-2xl p-5 space-y-3 shadow-md">
-        <h3 className="text-xs font-semibold text-teal-300 uppercase tracking-wider flex items-center space-x-2">
-          <ShieldCheck className="w-4 h-4" />
-          <span>Recommended Next Steps</span>
-        </h3>
-        <ul className="space-y-2 text-xs text-charcoal-200">
+      {/* SECTION 5: RECOMMENDED NEXT ACTIONS (High-Contrast Light Section) */}
+      <section className="rounded-3xl bg-cream text-cream-ink p-8 sm:p-12 space-y-6 shadow-2xl border border-black/10 relative z-10 w-full">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-magenta text-bg-black flex items-center justify-center shadow-md">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h3 className="font-display text-3xl tracking-wide text-cream-ink uppercase">RECOMMENDED ACTION STEPS</h3>
+        </div>
+
+        <ul className="space-y-3 text-sm sm:text-base font-medium text-cream-ink/90">
           {analysis.suggestedActions.map((action, i) => (
-            <li key={i} className="flex items-start space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
+            <li key={i} className="flex items-start space-x-3 bg-white/70 p-4 rounded-2xl border border-black/5 shadow-sm">
+              <CheckCircle2 className="w-5 h-5 text-magenta shrink-0 mt-0.5" />
               <span>{action}</span>
             </li>
           ))}
         </ul>
 
-        <div className="pt-2">
+        <div className="pt-4">
           <button
             onClick={onGenerateReport}
-            className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-medium text-xs transition shadow-md flex items-center justify-center space-x-1.5"
+            className="w-full py-5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-xl tracking-wider transition-all duration-300 shadow-xl shadow-magenta/30 hover:scale-[1.01] flex items-center justify-center space-x-2"
           >
-            <span>Generate Complaint Report Now</span>
-            <ChevronRight className="w-4 h-4" />
+            <span>GENERATE COMPLAINT REPORT NOW</span>
+            <ChevronRight className="w-6 h-6" />
           </button>
         </div>
-      </div>
+      </section>
 
     </div>
   );
