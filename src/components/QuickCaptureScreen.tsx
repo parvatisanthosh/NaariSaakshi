@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Video, Square, EyeOff, MapPin, AlertCircle, Shield, FileText, Check, Loader2 } from 'lucide-react';
+import { Video, Square, EyeOff, MapPin, AlertCircle, Shield, FileText, Check, Loader2, ArrowLeft, RefreshCw, Play } from 'lucide-react';
 import { Incident, Attachment } from '../types';
 
 interface QuickCaptureScreenProps {
@@ -15,11 +15,14 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
   trustedContactName,
   trustedContactPhone
 }) => {
+  const [step, setStep] = useState<'recording' | 'preview'>('recording');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isDisguised, setIsDisguised] = useState(false);
   const [shareLocationOptIn, setShareLocationOptIn] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -30,11 +33,8 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
-    // Browser Security Feature: The browser will display its native camera/mic indicator (red dot/bar)
-    // in the address bar or status bar. This is required by browser security policies and cannot be suppressed.
     startQuickCaptureRecording();
 
-    // Acquire current location in background for draft metadata
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -62,6 +62,10 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
     try {
       videoChunksRef.current = [];
       setCameraError(null);
+      setStep('recording');
+      setElapsedSeconds(0);
+      setRecordedVideoUrl(null);
+      setRecordedBlob(null);
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera/Microphone API not supported on this device');
@@ -79,8 +83,6 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
         videoRef.current.play().catch(e => console.warn('Video playback warning:', e));
       }
 
-      // MediaRecorder with 1000ms timeslice to periodically flush chunks
-      // so if recording is interrupted, captured data is preserved up to that moment
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
@@ -90,8 +92,9 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
         }
       };
 
-      recorder.start(1000); // Flush chunks every 1 second
+      recorder.start(1000);
 
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setElapsedSeconds(prev => prev + 1);
       }, 1000);
@@ -109,8 +112,8 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
     window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
   };
 
-  const handleStopAndSave = () => {
-    setIsSaving(true);
+  const handleStopRecordingToPreview = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
 
     if (shareLocationOptIn && coords && trustedContactPhone) {
       handleShareLocationSms();
@@ -118,69 +121,72 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.onstop = () => {
-        finalizeDraftAndSave();
+        generatePreview();
       };
       mediaRecorderRef.current.stop();
     } else {
-      finalizeDraftAndSave();
+      generatePreview();
     }
   };
 
-  const finalizeDraftAndSave = () => {
+  const generatePreview = () => {
     cleanupStream();
+    const blob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+    setRecordedBlob(blob);
 
-    const videoBlob = new Blob(videoChunksRef.current, { type: 'video/webm' });
     const reader = new FileReader();
+    reader.onloadend = () => {
+      setRecordedVideoUrl(reader.result as string);
+      setStep('preview');
+    };
+    if (blob.size > 0) {
+      reader.readAsDataURL(blob);
+    } else {
+      setStep('preview');
+    }
+  };
 
-    const saveDraftWithDataUrl = (dataUrl?: string) => {
-      const videoAttachment: Attachment = {
-        id: 'att-qc-' + Math.random().toString(36).substr(2, 6),
-        name: `QuickCapture_Video_${new Date().toISOString().slice(0, 10)}.webm`,
-        type: 'video',
-        dataUrl,
-        size: videoBlob.size,
-        uploadedAt: new Date().toISOString(),
-        isLiveCapture: true,
-        captureMethod: 'camera'
-      };
+  const handleFinalSubmit = () => {
+    setIsSaving(true);
 
-      const nowIso = new Date().toISOString();
-      const newDraft: Incident = {
-        id: 'inc-qc-' + Math.random().toString(36).substr(2, 8),
-        created_at: nowIso,
-        incident_datetime: nowIso,
-        location: coords ? `GPS (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})` : 'Quick Capture Location',
-        latitude: coords?.lat,
-        longitude: coords?.lng,
-        people_involved: [],
-        category: 'Other',
-        narrative_raw: 'Quick Capture video recording saved in-the-moment.',
-        narrative_structured: {
-          summary: 'Quick Capture — needs details',
-          context: 'Recorded live in-the-moment using Quick Capture mode.',
-          keyActions: ['Live video/audio evidence recorded.'],
-          impactDescription: 'In-the-moment evidence preserved.',
-          recommendedFollowUp: 'Open when safe to complete narrative details, people involved, and review.'
-        },
-        witnesses: [],
-        attachments: videoChunksRef.current.length > 0 ? [videoAttachment] : [],
-        user_edited: false,
-        tags: ['Quick Capture'],
-        isQuickCaptureDraft: true
-      };
-
-      setIsSaving(false);
-      onSaveQuickCapture(newDraft);
+    const videoAttachment: Attachment = {
+      id: 'att-qc-' + Math.random().toString(36).substr(2, 6),
+      name: `QuickCapture_Video_${new Date().toISOString().slice(0, 10)}.webm`,
+      type: 'video',
+      dataUrl: recordedVideoUrl || undefined,
+      size: recordedBlob?.size || 0,
+      uploadedAt: new Date().toISOString(),
+      isLiveCapture: true,
+      captureMethod: 'camera'
     };
 
-    if (videoBlob.size > 0) {
-      reader.onloadend = () => {
-        saveDraftWithDataUrl(reader.result as string);
-      };
-      reader.readAsDataURL(videoBlob);
-    } else {
-      saveDraftWithDataUrl(undefined);
-    }
+    const nowIso = new Date().toISOString();
+    const newDraft: Incident = {
+      id: 'inc-qc-' + Math.random().toString(36).substr(2, 8),
+      created_at: nowIso,
+      incident_datetime: nowIso,
+      location: coords ? `GPS (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})` : 'Quick Capture Location',
+      latitude: coords?.lat,
+      longitude: coords?.lng,
+      people_involved: [],
+      category: 'Other',
+      narrative_raw: 'Quick Capture video recording saved in-the-moment.',
+      narrative_structured: {
+        summary: 'Quick Capture — needs details',
+        context: 'Recorded live in-the-moment using Quick Capture mode.',
+        keyActions: ['Live video/audio evidence recorded.'],
+        impactDescription: 'In-the-moment evidence preserved.',
+        recommendedFollowUp: 'Open when safe to complete narrative details, people involved, and review.'
+      },
+      witnesses: [],
+      attachments: recordedVideoUrl ? [videoAttachment] : [],
+      user_edited: false,
+      tags: ['Quick Capture'],
+      isQuickCaptureDraft: true
+    };
+
+    setIsSaving(false);
+    onSaveQuickCapture(newDraft);
   };
 
   const formatTimer = (secs: number) => {
@@ -197,9 +203,10 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
           <h3 className="text-base font-semibold text-amber-200">{cameraError}</h3>
           <button
             onClick={onCancel}
-            className="px-6 py-2.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-charcoal-200 text-xs font-medium transition"
+            className="px-6 py-2.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-charcoal-200 text-xs font-medium transition flex items-center justify-center space-x-1.5 mx-auto"
           >
-            Return to Timeline
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Timeline</span>
           </button>
         </div>
       </div>
@@ -216,15 +223,13 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
             <span className="text-sm font-semibold text-slate-200">Notes — Project Standup</span>
           </div>
           <button
-            onClick={handleStopAndSave}
-            disabled={isSaving}
+            onClick={handleStopRecordingToPreview}
             className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-600 transition"
           >
-            {isSaving ? 'Saving...' : 'Done'}
+            Done
           </button>
         </div>
 
-        {/* Fake Notes Body */}
         <div className="flex-1 space-y-3 text-xs text-slate-400 font-mono pt-2">
           <p>• Reviewed sprint task board and open backlog items.</p>
           <p>• Action items assigned for Q3 documentation update.</p>
@@ -248,92 +253,160 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
   return (
     <div className="max-w-xl mx-auto px-4 py-6 pb-28 space-y-5">
       
-      {/* Header Banner */}
-      <div className="bg-rose-950/80 border border-rose-500/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
-        <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></div>
-          <div>
-            <h2 className="text-sm font-bold text-rose-100 uppercase tracking-wider">Quick Capture Active</h2>
-            <span className="text-[10px] text-rose-300/80 font-mono">Recording video + audio in-the-moment</span>
-          </div>
-        </div>
-
-        <div className="text-right font-mono font-bold text-lg text-rose-200">
-          {formatTimer(elapsedSeconds)}
-        </div>
-      </div>
-
-      {/* Live Video Preview Window */}
-      <div className="relative rounded-2xl overflow-hidden bg-black border border-charcoal-700 aspect-video shadow-2xl flex items-center justify-center">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full h-full object-cover"
-        />
-
-        <div className="absolute top-3 left-3 bg-charcoal-950/80 border border-charcoal-700/80 px-2.5 py-1 rounded-lg text-[10px] text-rose-300 font-mono flex items-center space-x-1.5">
-          <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
-          <span>REC {formatTimer(elapsedSeconds)}</span>
-        </div>
-
-        {/* Disguise Toggle Button */}
+      {/* Top Back Navigation Button */}
+      <div className="flex items-center justify-between">
         <button
-          onClick={() => setIsDisguised(true)}
-          className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-charcoal-900/90 hover:bg-charcoal-800 border border-charcoal-700 text-[11px] text-charcoal-300 flex items-center space-x-1 transition"
+          onClick={onCancel}
+          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
         >
-          <EyeOff className="w-3.5 h-3.5 text-teal-400" />
-          <span>Disguise Screen</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Timeline</span>
         </button>
       </div>
 
-      {/* Optional Location Share Control */}
-      {trustedContactPhone && (
-        <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-xl p-3.5 space-y-2 text-xs">
-          <label className="flex items-start space-x-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={shareLocationOptIn}
-              onChange={(e) => setShareLocationOptIn(e.target.checked)}
-              className="mt-0.5 rounded bg-charcoal-900 border-charcoal-600 text-teal-600 focus:ring-teal-500 shrink-0"
-            />
-            <div className="text-charcoal-200">
-              <span className="font-semibold block text-xs">
-                Share initial location link with {trustedContactName || 'Trusted Contact'}
-              </span>
-              <span className="text-[10px] text-charcoal-400 block">
-                Opens SMS with your location link ({coords ? `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}` : 'getting GPS...'})
-              </span>
+      {step === 'recording' && (
+        <>
+          {/* Header Banner */}
+          <div className="bg-rose-950/80 border border-rose-500/40 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></div>
+              <div>
+                <h2 className="text-sm font-bold text-rose-100 uppercase tracking-wider">Quick Capture Active</h2>
+                <span className="text-[10px] text-rose-300/80 font-mono">Recording video + audio in-the-moment</span>
+              </div>
             </div>
-          </label>
-        </div>
+
+            <div className="text-right font-mono font-bold text-lg text-rose-200">
+              {formatTimer(elapsedSeconds)}
+            </div>
+          </div>
+
+          {/* Live Video Preview Window */}
+          <div className="relative rounded-2xl overflow-hidden bg-black border border-charcoal-700 aspect-video shadow-2xl flex items-center justify-center">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+
+            <div className="absolute top-3 left-3 bg-charcoal-950/80 border border-charcoal-700/80 px-2.5 py-1 rounded-lg text-[10px] text-rose-300 font-mono flex items-center space-x-1.5">
+              <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
+              <span>REC {formatTimer(elapsedSeconds)}</span>
+            </div>
+
+            {/* Disguise Toggle Button */}
+            <button
+              onClick={() => setIsDisguised(true)}
+              className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-charcoal-900/90 hover:bg-charcoal-800 border border-charcoal-700 text-[11px] text-charcoal-300 flex items-center space-x-1 transition"
+            >
+              <EyeOff className="w-3.5 h-3.5 text-teal-400" />
+              <span>Disguise Screen</span>
+            </button>
+          </div>
+
+          {/* Optional Location Share Control */}
+          {trustedContactPhone && (
+            <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-xl p-3.5 space-y-2 text-xs">
+              <label className="flex items-start space-x-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shareLocationOptIn}
+                  onChange={(e) => setShareLocationOptIn(e.target.checked)}
+                  className="mt-0.5 rounded bg-charcoal-900 border-charcoal-600 text-teal-600 focus:ring-teal-500 shrink-0"
+                />
+                <div className="text-charcoal-200">
+                  <span className="font-semibold block text-xs">
+                    Share initial location link with {trustedContactName || 'Trusted Contact'}
+                  </span>
+                  <span className="text-[10px] text-charcoal-400 block">
+                    Opens SMS with your location link ({coords ? `${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}` : 'getting GPS...'})
+                  </span>
+                </div>
+              </label>
+            </div>
+          )}
+
+          {/* Stop & Review Action Button */}
+          <div className="space-y-3 pt-2">
+            <button
+              onClick={handleStopRecordingToPreview}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-700 via-rose-600 to-rose-700 hover:from-rose-600 hover:to-rose-500 text-white font-bold text-sm transition shadow-xl shadow-rose-950/60 flex items-center justify-center space-x-2 active:scale-95"
+            >
+              <Square className="w-5 h-5 text-white fill-white" />
+              <span>Stop & Review Video Recording</span>
+            </button>
+
+            <p className="text-[10px] text-charcoal-400 text-center leading-relaxed">
+              Tapping stop will pause recording and let you preview/play back your video before saving to timeline.
+            </p>
+          </div>
+        </>
       )}
 
-      {/* Stop & Save Action Button */}
-      <div className="space-y-3 pt-2">
-        <button
-          onClick={handleStopAndSave}
-          disabled={isSaving}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-rose-700 via-rose-600 to-rose-700 hover:from-rose-600 hover:to-rose-500 text-white font-bold text-sm transition shadow-xl shadow-rose-950/60 flex items-center justify-center space-x-2 active:scale-95 disabled:opacity-50"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Saving Evidence Draft...</span>
-            </>
-          ) : (
-            <>
-              <Square className="w-5 h-5 text-white fill-white" />
-              <span>Stop & Save Quick Capture</span>
-            </>
-          )}
-        </button>
+      {/* Step Preview: Watch Recorded Video & Retake / Submit */}
+      {step === 'preview' && (
+        <div className="bg-charcoal-800 border border-charcoal-700 rounded-3xl p-6 space-y-5 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-charcoal-700 pb-3">
+            <div className="flex items-center space-x-2 text-teal-400">
+              <Video className="w-5 h-5" />
+              <h3 className="text-base font-bold text-charcoal-100">Preview Recorded Video</h3>
+            </div>
+            <span className="text-[10px] text-teal-300 bg-teal-950 px-2.5 py-0.5 rounded-full border border-teal-800">
+              Ready to Save
+            </span>
+          </div>
 
-        <p className="text-[10px] text-charcoal-400 text-center leading-relaxed">
-          Browser camera indicator is active per browser security rules. Video draft will be saved locally so you can add details later when you're safe.
-        </p>
-      </div>
+          <div className="space-y-3">
+            {recordedVideoUrl ? (
+              <div className="rounded-2xl overflow-hidden bg-black border border-charcoal-700 max-h-80 flex items-center justify-center shadow-lg">
+                <video
+                  src={recordedVideoUrl}
+                  controls
+                  autoPlay={false}
+                  className="w-full h-auto max-h-80 object-contain"
+                />
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-charcoal-900 rounded-2xl text-xs text-charcoal-400">
+                No video data recorded.
+              </div>
+            )}
+            <p className="text-[11px] text-charcoal-300 text-center">
+              Play back your recorded evidence video above to verify before submitting.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+            <button
+              onClick={startQuickCaptureRecording}
+              className="w-full sm:flex-1 py-3 rounded-xl bg-charcoal-700 hover:bg-charcoal-600 text-charcoal-200 font-semibold text-xs transition flex items-center justify-center space-x-1.5"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Retake Video</span>
+            </button>
+
+            <button
+              onClick={handleFinalSubmit}
+              disabled={isSaving}
+              className="w-full sm:flex-1 py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs transition shadow-lg flex items-center justify-center space-x-1.5 disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Save Quick Capture Entry</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

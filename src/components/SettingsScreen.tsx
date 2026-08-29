@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe, PhoneCall } from 'lucide-react';
+import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe, PhoneCall, ArrowLeft } from 'lucide-react';
 import { AppSettings, Incident } from '../types';
 import { LEGAL_CALL_RECORDING_INFO } from './RecordCallScreen';
 
@@ -11,6 +11,7 @@ interface SettingsScreenProps {
   onClearAllData: () => void;
   onClearLocationData: () => void;
   onImportData: (imported: Incident[]) => void;
+  onBack?: () => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
@@ -20,7 +21,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onResetSeedData,
   onClearAllData,
   onClearLocationData,
-  onImportData
+  onImportData,
+  onBack
 }) => {
   const [pinInput, setPinInput] = useState(settings.pinCode || '');
   const [quickExitUrl, setQuickExitUrl] = useState(settings.quickExitUrl || 'https://weather.com');
@@ -110,6 +112,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
       
+      {/* Top Back Navigation Button */}
+      {onBack && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Timeline</span>
+          </button>
+        </div>
+      )}
+
       {/* Title */}
       <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 shadow-sm space-y-2">
         <div className="flex items-center space-x-2 text-teal-400 font-semibold text-xs uppercase tracking-wider">

@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check, AlertTriangle, AlertCircle } from 'lucide-react';
+import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check, AlertTriangle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Incident } from '../types';
 import { ReportConfig, ReportType, downloadPdfReport, generateReportDocumentText } from '../reportEngine';
 
 interface ReportScreenProps {
   incidents: Incident[];
+  onBack?: () => void;
 }
 
-export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
+export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack }) => {
   const [reportType, setReportType] = useState<ReportType>('POSH');
   const [complainantName, setComplainantName] = useState('Ananya Sharma');
   const [complainantContact, setComplainantContact] = useState('+91 98765 43210');
@@ -102,6 +103,19 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents }) => {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
       
+      {/* Top Back Navigation Button */}
+      {onBack && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Timeline</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 shadow-sm space-y-2">
         <div className="flex items-center space-x-2 text-teal-400 font-semibold text-xs uppercase tracking-wider">

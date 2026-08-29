@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PhoneCall, Mic, Square, ShieldCheck, AlertCircle, Info, ArrowRight, Check, Loader2, Sparkles, Volume2 } from 'lucide-react';
+import { PhoneCall, Mic, Square, ShieldCheck, AlertCircle, Info, ArrowRight, Check, Loader2, Sparkles, Volume2, ArrowLeft } from 'lucide-react';
 import { Incident, Attachment, CategoryType } from '../types';
 import { extractIncidentFromRawText } from '../aiEngine';
 
@@ -201,6 +201,17 @@ export const RecordCallScreen: React.FC<RecordCallScreenProps> = ({
   return (
     <div className="max-w-xl mx-auto px-4 py-6 pb-28 space-y-5">
       
+      {/* Top Back Navigation Button */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onCancel}
+          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Timeline</span>
+        </button>
+      </div>
+
       {/* Step 1: Legal Framing & Guidance Card */}
       {step === 'info' && (
         <div className="bg-charcoal-800 border border-charcoal-700 rounded-3xl p-6 space-y-5 shadow-xl">

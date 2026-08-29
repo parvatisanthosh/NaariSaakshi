@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Type, Sparkles, Paperclip, CheckCircle2, AlertCircle, Edit3, X, Trash2, ArrowRight, Check, Loader2, MapPin, Camera, Info, HardDrive } from 'lucide-react';
+import { Mic, MicOff, Type, Sparkles, Paperclip, CheckCircle2, AlertCircle, Edit3, X, Trash2, ArrowRight, Check, Loader2, MapPin, Camera, Info, HardDrive, ArrowLeft } from 'lucide-react';
 import { Attachment, CategoryType, Incident, PersonInvolved } from '../types';
 import { extractIncidentFromRawText } from '../aiEngine';
 import { CameraCaptureModal } from './CameraCaptureModal';
@@ -478,6 +478,17 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
           </div>
         </div>
       )}
+
+      {/* Top Back Navigation Button */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onCancel}
+          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Timeline</span>
+        </button>
+      </div>
 
       {/* Top Banner Nudge */}
       <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-4 shadow-sm">

@@ -4,6 +4,9 @@ import { ActiveTab, Navigation } from './components/Navigation';
 import { PinLockModal } from './components/PinLockModal';
 import { SosPanelModal } from './components/SosPanelModal';
 import { QuickCaptureScreen } from './components/QuickCaptureScreen';
+import { RecordCallScreen } from './components/RecordCallScreen';
+import { ChatbotModal } from './components/ChatbotModal';
+import { RightsScreen } from './components/RightsScreen';
 import { TimelineScreen } from './components/TimelineScreen';
 import { LogIncidentScreen } from './components/LogIncidentScreen';
 import { IncidentDetailScreen } from './components/IncidentDetailScreen';
@@ -20,9 +23,10 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>(StorageService.getSettings());
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   
-  // Security PIN lock state & SOS panel state
+  // Security PIN lock state, SOS panel state & Chatbot state
   const [isLocked, setIsLocked] = useState<boolean>(false);
   const [showSosPanel, setShowSosPanel] = useState<boolean>(false);
+  const [showChatbot, setShowChatbot] = useState<boolean>(false);
 
   // Pattern Alert Banner state
   const [patternBanner, setPatternBanner] = useState<{
@@ -237,6 +241,7 @@ export const App: React.FC = () => {
           setSelectedIncident(null);
           setActiveTab('quick-capture');
         }}
+        onOpenChatbot={() => setShowChatbot(true)}
       />
 
       {/* Emergency SOS Panel Modal */}
@@ -249,6 +254,13 @@ export const App: React.FC = () => {
           setSelectedIncident(null);
           setActiveTab('settings');
         }}
+      />
+
+      {/* Grounded Guidance Chatbot Modal */}
+      <ChatbotModal
+        isOpen={showChatbot}
+        onClose={() => setShowChatbot(false)}
+        onOpenSos={() => setShowSosPanel(true)}
       />
 
       {/* Pattern Threshold Crossing Notification Banner */}
@@ -303,6 +315,7 @@ export const App: React.FC = () => {
                 incidents={incidents}
                 onSelectIncident={(inc) => setSelectedIncident(inc)}
                 onLogNew={() => setActiveTab('log')}
+                onRecordCall={() => setActiveTab('record-call')}
                 onViewPatterns={() => setActiveTab('patterns')}
               />
             )}
@@ -313,6 +326,13 @@ export const App: React.FC = () => {
                 onCancel={() => setActiveTab('timeline')}
                 trustedContactName={settings.trustedContactName}
                 trustedContactPhone={settings.trustedContactPhone}
+              />
+            )}
+
+            {activeTab === 'record-call' && (
+              <RecordCallScreen
+                onSaveCallIncident={handleSaveIncident}
+                onCancel={() => setActiveTab('timeline')}
               />
             )}
 
@@ -328,11 +348,22 @@ export const App: React.FC = () => {
                 incidents={incidents}
                 onSelectIncident={(inc) => setSelectedIncident(inc)}
                 onGenerateReport={() => setActiveTab('report')}
+                onBack={() => setActiveTab('timeline')}
               />
             )}
 
             {activeTab === 'report' && (
-              <ReportScreen incidents={incidents} />
+              <ReportScreen
+                incidents={incidents}
+                onBack={() => setActiveTab('timeline')}
+              />
+            )}
+
+            {activeTab === 'rights' && (
+              <RightsScreen
+                onOpenSos={() => setShowSosPanel(true)}
+                onBack={() => setActiveTab('timeline')}
+              />
             )}
 
             {activeTab === 'settings' && (
@@ -344,6 +375,7 @@ export const App: React.FC = () => {
                 onClearAllData={handleClearAllData}
                 onClearLocationData={handleClearLocationData}
                 onImportData={handleImportData}
+                onBack={() => setActiveTab('timeline')}
               />
             )}
           </>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield, PhoneCall, Video } from 'lucide-react';
+import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield, PhoneCall, Video, MessageSquare, BookOpen } from 'lucide-react';
 
-export type ActiveTab = 'timeline' | 'log' | 'patterns' | 'report' | 'settings' | 'quick-capture';
+export type ActiveTab = 'timeline' | 'log' | 'patterns' | 'report' | 'rights' | 'settings' | 'quick-capture' | 'record-call';
 
 interface NavbarProps {
   activeTab: ActiveTab;
@@ -10,6 +10,7 @@ interface NavbarProps {
   quickExitUrl: string;
   onOpenSos: () => void;
   onOpenQuickCapture: () => void;
+  onOpenChatbot: () => void;
 }
 
 export const Navigation: React.FC<NavbarProps> = ({
@@ -18,7 +19,8 @@ export const Navigation: React.FC<NavbarProps> = ({
   quickExitEnabled,
   quickExitUrl,
   onOpenSos,
-  onOpenQuickCapture
+  onOpenQuickCapture,
+  onOpenChatbot
 }) => {
   const handleQuickExit = () => {
     window.location.href = quickExitUrl || 'https://weather.com';
@@ -42,8 +44,18 @@ export const Navigation: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons: Quick Capture, SOS & Quick Exit */}
+          {/* Action Buttons: Chat Assistant, Quick Capture, SOS & Quick Exit */}
           <div className="flex items-center space-x-1.5 sm:space-x-2">
+            {/* Calm Chat Assistant Button */}
+            <button
+              onClick={onOpenChatbot}
+              title="Chat Assistant - App & Process Guidance"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700 text-teal-400 text-xs font-medium flex items-center space-x-1 transition active:scale-95"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Ask AI</span>
+            </button>
+
             {/* One-Tap Quick Capture Button */}
             <button
               onClick={onOpenQuickCapture}
@@ -122,7 +134,7 @@ export const Navigation: React.FC<NavbarProps> = ({
 
           <button
             onClick={() => setActiveTab('report')}
-            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl transition-all ${
               activeTab === 'report'
                 ? 'text-teal-400 bg-teal-950/40'
                 : 'text-charcoal-400 hover:text-charcoal-200'
@@ -130,6 +142,18 @@ export const Navigation: React.FC<NavbarProps> = ({
           >
             <FileText className="w-5 h-5" />
             <span className="text-[11px] font-medium mt-1">Report</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('rights')}
+            className={`flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl transition-all ${
+              activeTab === 'rights'
+                ? 'text-teal-400 bg-teal-950/40'
+                : 'text-charcoal-400 hover:text-charcoal-200'
+            }`}
+          >
+            <BookOpen className="w-5 h-5" />
+            <span className="text-[11px] font-medium mt-1">Rights</span>
           </button>
 
           <button

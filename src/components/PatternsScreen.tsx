@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2, Globe } from 'lucide-react';
+import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2, Globe, ArrowLeft } from 'lucide-react';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { Incident } from '../types';
@@ -10,6 +10,7 @@ interface PatternsScreenProps {
   incidents: Incident[];
   onSelectIncident: (incident: Incident) => void;
   onGenerateReport: () => void;
+  onBack?: () => void;
 }
 
 const createCustomPinIcon = (count: number) => {
@@ -56,7 +57,8 @@ const createCustomPinIcon = (count: number) => {
 export const PatternsScreen: React.FC<PatternsScreenProps> = ({
   incidents,
   onSelectIncident,
-  onGenerateReport
+  onGenerateReport,
+  onBack
 }) => {
   const analysis = useMemo(() => analyzeIncidentPatterns(incidents), [incidents]);
 
@@ -110,6 +112,19 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
       
+      {/* Top Back Navigation Button */}
+      {onBack && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Timeline</span>
+          </button>
+        </div>
+      )}
+
       {/* Title & Purpose Header */}
       <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 shadow-sm space-y-2">
         <div className="flex items-center justify-between">
