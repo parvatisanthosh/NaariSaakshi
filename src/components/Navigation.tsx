@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield, PhoneCall, Video, MessageSquare, BookOpen, HelpCircle } from 'lucide-react';
+import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield, PhoneCall, Video, MessageSquare, BookOpen, HelpCircle, Sun, Moon, Plus } from 'lucide-react';
 
 export type ActiveTab = 'timeline' | 'log' | 'patterns' | 'report' | 'faq' | 'rights' | 'settings' | 'quick-capture' | 'record-call';
 
@@ -11,6 +11,8 @@ interface NavbarProps {
   onOpenSos: () => void;
   onOpenQuickCapture: () => void;
   onOpenChatbot: () => void;
+  currentTheme?: 'dark' | 'light' | 'stealth';
+  onToggleTheme?: () => void;
 }
 
 export const Navigation: React.FC<NavbarProps> = ({
@@ -20,7 +22,9 @@ export const Navigation: React.FC<NavbarProps> = ({
   quickExitUrl,
   onOpenSos,
   onOpenQuickCapture,
-  onOpenChatbot
+  onOpenChatbot,
+  currentTheme = 'dark',
+  onToggleTheme
 }) => {
   const handleQuickExit = () => {
     window.location.href = quickExitUrl || 'https://weather.com';
@@ -55,9 +59,9 @@ export const Navigation: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenChatbot}
               title="Chat Assistant - App & Process Guidance"
-              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700 text-teal-400 text-xs font-medium flex items-center space-x-1 transition active:scale-95"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-magenta text-xs font-medium flex items-center space-x-1 transition active:scale-95"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <MessageSquare className="w-3.5 h-3.5 text-magenta" />
               <span className="hidden md:inline">Ask AI</span>
             </button>
 
@@ -65,7 +69,7 @@ export const Navigation: React.FC<NavbarProps> = ({
             <button
               onClick={onOpenQuickCapture}
               title="Quick Capture - Record live evidence"
-              className="px-2.5 sm:px-3 py-1.5 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-rose-500/50 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center space-x-1 sm:space-x-1.5 transition active:scale-95 shadow-sm"
+              className="px-2.5 sm:px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-rose-500/50 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center space-x-1 sm:space-x-1.5 transition active:scale-95 shadow-sm"
             >
               <Video className="w-3.5 h-3.5 text-rose-400" />
               <span className="hidden xs:inline">Quick Capture</span>
@@ -90,14 +94,29 @@ export const Navigation: React.FC<NavbarProps> = ({
               <HelpCircle className="w-4 h-4" />
             </button>
 
+            {/* Light / Dark Mode Toggle Button */}
+            {onToggleTheme && (
+              <button
+                onClick={onToggleTheme}
+                title={currentTheme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                className="p-1.5 rounded-full hover:bg-white/10 text-magenta hover:scale-110 transition active:scale-95 shadow-sm"
+              >
+                {currentTheme === 'light' ? (
+                  <Moon className="w-4 h-4 text-magenta" />
+                ) : (
+                  <Sun className="w-4 h-4 text-magenta animate-spin-slow" />
+                )}
+              </button>
+            )}
+
             {/* Discreet Quick Exit Button */}
             {quickExitEnabled && (
               <button
                 onClick={handleQuickExit}
                 title="Quick Exit - Redirect immediately"
-                className="px-2.5 sm:px-3 py-1.5 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700/80 text-charcoal-300 hover:text-charcoal-100 text-xs font-medium flex items-center space-x-1 sm:space-x-1.5 transition active:scale-95 shadow-sm"
+                className="px-2.5 sm:px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-text-muted hover:text-magenta text-xs font-medium flex items-center space-x-1 sm:space-x-1.5 transition active:scale-95 shadow-sm"
               >
-                <ExternalLink className="w-3.5 h-3.5 text-accent-rose/80" />
+                <ExternalLink className="w-3.5 h-3.5 text-magenta" />
                 <span className="hidden xs:inline">Quick Exit</span>
               </button>
             )}
@@ -106,95 +125,105 @@ export const Navigation: React.FC<NavbarProps> = ({
       </header>
 
       {/* Bottom Navigation Bar for Mobile First Usability */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-bg-black/95 backdrop-blur-lg border-t border-white/10 px-2 py-1.5 pb-safe">
-        <div className="max-w-md mx-auto flex items-center justify-around">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-bg-black/95 backdrop-blur-lg border-t border-white/10 px-3 py-2 pb-safe shadow-2xl">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
           
+          {/* 1. Timeline */}
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
               activeTab === 'timeline'
-                ? 'text-magenta bg-white/5'
+                ? 'text-magenta bg-white/10 font-bold scale-105'
                 : 'text-text-muted hover:text-text-light'
             }`}
           >
             <Home className="w-5 h-5" />
-            <span className="text-[10px] font-medium mt-1">Timeline</span>
+            <span className="text-[11px] font-semibold mt-1">Timeline</span>
           </button>
 
+          {/* 2. Patterns */}
           <button
             onClick={() => setActiveTab('patterns')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
               activeTab === 'patterns'
-                ? 'text-magenta bg-white/5'
+                ? 'text-magenta bg-white/10 font-bold scale-105'
                 : 'text-text-muted hover:text-text-light'
             }`}
           >
             <PieChart className="w-5 h-5" />
-            <span className="text-[10px] font-medium mt-1">Patterns</span>
+            <span className="text-[11px] font-semibold mt-1">Patterns</span>
           </button>
 
-          {/* Prominent Center "+ Log" Button */}
-          <button
-            onClick={() => setActiveTab('log')}
-            className={`flex flex-col items-center justify-center -mt-5 transition-all ${
-              activeTab === 'log' ? 'scale-105' : 'hover:scale-102'
-            }`}
-          >
-            <div 
-              className="w-13 h-13 rounded-full bg-gradient-to-br from-magenta to-violet text-bg-black flex items-center justify-center shadow-lg shadow-magenta/30 transition active:scale-95"
-              style={{ boxShadow: '0 0 0 6px #0D0B10, 0 10px 25px -3px rgba(232, 54, 143, 0.4)' }}
-            >
-              <PlusCircle className="w-7 h-7 text-bg-black font-bold" />
-            </div>
-            <span className="text-[10px] font-semibold text-magenta mt-1">Log</span>
-          </button>
-
+          {/* 3. Report */}
           <button
             onClick={() => setActiveTab('report')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
               activeTab === 'report'
-                ? 'text-magenta bg-white/5'
+                ? 'text-magenta bg-white/10 font-bold scale-105'
                 : 'text-text-muted hover:text-text-light'
             }`}
           >
             <FileText className="w-5 h-5" />
-            <span className="text-[10px] font-medium mt-1">Report</span>
+            <span className="text-[11px] font-semibold mt-1">Report</span>
           </button>
 
+          {/* 4. PROMINENT EXACT CENTER "+ LOG" BUTTON */}
+          <button
+            onClick={() => setActiveTab('log')}
+            className={`flex flex-col items-center justify-center -mt-6 transition-all duration-300 ${
+              activeTab === 'log' ? 'scale-110' : 'hover:scale-105'
+            }`}
+          >
+            <div 
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-magenta via-magenta-deep to-violet text-bg-black flex items-center justify-center border-2 border-magenta transition active:scale-95 shadow-[0_0_20px_rgba(232,54,143,0.6)]"
+              style={{
+                boxShadow: '0 0 0 5px var(--bg-black), 0 0 25px rgba(232, 54, 143, 0.6)'
+              }}
+            >
+              <div className="w-8 h-8 rounded-full border-2 border-bg-black flex items-center justify-center">
+                <Plus className="w-6 h-6 text-bg-black font-extrabold stroke-[3]" />
+              </div>
+            </div>
+            <span className="text-[11px] font-bold text-magenta mt-1 tracking-wider uppercase">Log</span>
+          </button>
+
+          {/* 5. FAQ */}
           <button
             onClick={() => setActiveTab('faq')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
               activeTab === 'faq'
-                ? 'text-magenta bg-white/5'
+                ? 'text-magenta bg-white/10 font-bold scale-105'
                 : 'text-text-muted hover:text-text-light'
             }`}
           >
             <HelpCircle className="w-5 h-5" />
-            <span className="text-[10px] font-medium mt-1">FAQ</span>
+            <span className="text-[11px] font-semibold mt-1">FAQ</span>
           </button>
 
+          {/* 6. Rights */}
           <button
             onClick={() => setActiveTab('rights')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2.5 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
               activeTab === 'rights'
-                ? 'text-teal-400 bg-teal-950/40'
-                : 'text-charcoal-400 hover:text-charcoal-200'
+                ? 'text-magenta bg-white/10 font-bold scale-105'
+                : 'text-text-muted hover:text-text-light'
             }`}
           >
             <BookOpen className="w-5 h-5" />
-            <span className="text-[11px] font-medium mt-1">Rights</span>
+            <span className="text-[11px] font-semibold mt-1">Rights</span>
           </button>
 
+          {/* 7. Settings */}
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
               activeTab === 'settings'
-                ? 'text-magenta bg-white/5'
+                ? 'text-magenta bg-white/10 font-bold scale-105'
                 : 'text-text-muted hover:text-text-light'
             }`}
           >
             <Settings className="w-5 h-5" />
-            <span className="text-[10px] font-medium mt-1">Settings</span>
+            <span className="text-[11px] font-semibold mt-1">Settings</span>
           </button>
 
         </div>

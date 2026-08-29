@@ -42,6 +42,14 @@ export const App: React.FC = () => {
   const blurTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Sync theme settings to document body
+    const currentTheme = settings.theme || 'dark';
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-stealth');
+    document.body.classList.add(`theme-${currentTheme}`);
+    document.body.setAttribute('data-theme', currentTheme);
+  }, [settings.theme]);
+
+  useEffect(() => {
     // Scroll window to top whenever active tab or selected incident changes
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [activeTab, selectedIncident]);
@@ -253,6 +261,13 @@ export const App: React.FC = () => {
           setActiveTab('quick-capture');
         }}
         onOpenChatbot={() => setShowChatbot(true)}
+        currentTheme={settings.theme || 'dark'}
+        onToggleTheme={() => {
+          const nextTheme = settings.theme === 'light' ? 'dark' : 'light';
+          const updated = { ...settings, theme: nextTheme as 'dark' | 'light' | 'stealth' };
+          StorageService.saveSettings(updated);
+          setSettings(updated);
+        }}
       />
 
       {/* Emergency SOS Panel Modal */}

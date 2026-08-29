@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PhoneCall, X, MapPin, Settings, AlertTriangle, ArrowRight, Loader2 } from 'lucide-react';
+import { PhoneCall, X, ShieldAlert, MapPin, Loader2, Phone } from 'lucide-react';
 
 interface SosPanelModalProps {
   isOpen: boolean;
@@ -22,173 +22,166 @@ export const SosPanelModal: React.FC<SosPanelModalProps> = ({
 
   const handleShareLocationSms = () => {
     if (!trustedPhone) return;
+    const cleanPhone = trustedPhone.replace(/[^0-9+]/g, '');
+
+    setIsLocatingSms(true);
 
     if (navigator.geolocation) {
-      setIsLocatingSms(true);
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setIsLocatingSms(false);
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
-          const msg = `I may need help. My current location: https://maps.google.com/?q=${lat},${lng}`;
-          const cleanPhone = trustedPhone.replace(/[^0-9+]/g, '');
+          const msg = `EMERGENCY ALERT: I may need help. My current GPS location: https://maps.google.com/?q=${lat},${lng}`;
           window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
         },
-        (err) => {
+        () => {
           setIsLocatingSms(false);
-          console.warn('Geolocation error for SMS:', err);
-          const msg = `I may need help. Please check on me.`;
-          const cleanPhone = trustedPhone.replace(/[^0-9+]/g, '');
+          const msg = `EMERGENCY ALERT: I may need help. Please check in on me immediately.`;
           window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
         },
-        { timeout: 8000, enableHighAccuracy: true }
+        { timeout: 8000 }
       );
     } else {
-      const msg = `I may need help. Please check on me.`;
-      const cleanPhone = trustedPhone.replace(/[^0-9+]/g, '');
+      setIsLocatingSms(false);
+      const msg = `EMERGENCY ALERT: I may need help. Please check in on me immediately.`;
       window.location.href = `sms:${cleanPhone}?body=${encodeURIComponent(msg)}`;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-charcoal-950/90 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-charcoal-800 border border-charcoal-700 rounded-3xl w-full max-w-lg p-6 space-y-5 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-white border border-black/10 rounded-3xl w-full max-w-lg p-6 sm:p-8 space-y-6 shadow-2xl relative text-cream-ink">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-charcoal-700 pb-3">
-          <div className="flex items-center space-x-3 text-rose-400">
-            <div className="w-10 h-10 rounded-full bg-rose-950/80 border border-rose-500/40 flex items-center justify-center">
-              <PhoneCall className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-black/10 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shadow-md">
+              <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-charcoal-100">Emergency Assistance</h3>
-              <span className="text-xs text-charcoal-400">Direct Helplines & Rapid Call</span>
+              <h3 className="font-display text-2xl text-cream-ink leading-none">EMERGENCY ASSISTANCE</h3>
+              <span className="text-xs font-mono font-bold text-cream-ink/60">DIRECT HELPLINES & RAPID CALL</span>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 text-charcoal-400 hover:text-charcoal-100 rounded-full bg-charcoal-900 border border-charcoal-700 transition"
+            className="p-2 text-cream-ink/60 hover:text-cream-ink rounded-full bg-cream transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 3 National Helplines */}
-        <div className="space-y-2.5">
+        {/* Rapid Call Helplines */}
+        <div className="space-y-3">
           <a
             href="tel:112"
-            className="w-full p-4 rounded-2xl bg-rose-950/90 hover:bg-rose-900 border border-rose-500/50 text-rose-100 flex items-center justify-between shadow-lg transition active:scale-[0.98] group"
+            className="w-full p-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-between shadow-lg transition active:scale-[0.98] group"
           >
             <div className="flex items-center space-x-3">
-              <PhoneCall className="w-5 h-5 text-rose-400 shrink-0" />
+              <PhoneCall className="w-5 h-5 text-white shrink-0" />
               <div className="text-left">
-                <span className="font-bold text-sm block">Call 112 — Emergency</span>
-                <span className="text-xs text-rose-200/80">Police, Fire & Medical Services</span>
+                <span className="font-bold text-base block font-display tracking-wider">CALL 112 — EMERGENCY</span>
+                <span className="text-xs text-white/90">Police, Fire & Medical Services</span>
               </div>
             </div>
-            <span className="text-xs font-mono font-bold bg-rose-900/80 px-3 py-1 rounded-full border border-rose-400/50 group-hover:bg-rose-800">
+            <span className="text-xs font-mono font-bold bg-white/20 px-3 py-1 rounded-full border border-white/30 group-hover:bg-white/30">
               112 →
             </span>
           </a>
 
           <a
             href="tel:181"
-            className="w-full p-3.5 rounded-2xl bg-charcoal-900 hover:bg-charcoal-850 border border-charcoal-700 text-charcoal-100 flex items-center justify-between transition active:scale-[0.98] group"
+            className="w-full p-4 rounded-2xl bg-cream hover:bg-cream/80 border border-black/10 text-cream-ink flex items-center justify-between transition active:scale-[0.98] group"
           >
             <div className="flex items-center space-x-3">
-              <PhoneCall className="w-4 h-4 text-teal-400 shrink-0" />
+              <PhoneCall className="w-4 h-4 text-magenta shrink-0" />
               <div className="text-left">
-                <span className="font-semibold text-xs block">Call 181 — Women's Helpline</span>
-                <span className="text-[11px] text-charcoal-400">Support, Legal Aid & Counselling</span>
+                <span className="font-bold text-sm block font-display tracking-wider">CALL 181 — WOMEN'S HELPLINE</span>
+                <span className="text-xs text-cream-ink/70">Support, Legal Aid & Counselling</span>
               </div>
             </div>
-            <span className="text-xs font-mono text-charcoal-300 bg-charcoal-800 px-2.5 py-1 rounded-full border border-charcoal-700">
+            <span className="text-xs font-mono text-cream-ink font-bold bg-white px-3 py-1 rounded-full border border-black/10">
               181 →
             </span>
           </a>
 
           <a
             href="tel:1091"
-            className="w-full p-3.5 rounded-2xl bg-charcoal-900 hover:bg-charcoal-850 border border-charcoal-700 text-charcoal-100 flex items-center justify-between transition active:scale-[0.98] group"
+            className="w-full p-4 rounded-2xl bg-cream hover:bg-cream/80 border border-black/10 text-cream-ink flex items-center justify-between transition active:scale-[0.98] group"
           >
             <div className="flex items-center space-x-3">
-              <PhoneCall className="w-4 h-4 text-teal-400 shrink-0" />
+              <PhoneCall className="w-4 h-4 text-magenta shrink-0" />
               <div className="text-left">
-                <span className="font-semibold text-xs block">Call 1091 — Women in Distress</span>
-                <span className="text-[11px] text-charcoal-400">Immediate Safety Response</span>
+                <span className="font-bold text-sm block font-display tracking-wider">CALL 1091 — WOMEN IN DISTRESS</span>
+                <span className="text-xs text-cream-ink/70">Immediate Safety Response</span>
               </div>
             </div>
-            <span className="text-xs font-mono text-charcoal-300 bg-charcoal-800 px-2.5 py-1 rounded-full border border-charcoal-700">
+            <span className="text-xs font-mono text-cream-ink font-bold bg-white px-3 py-1 rounded-full border border-black/10">
               1091 →
             </span>
           </a>
         </div>
 
         {/* Trusted Contact Option */}
-        <div className="pt-2 border-t border-charcoal-700/80 space-y-2">
+        <div className="pt-3 border-t border-black/10 space-y-3">
           {trustedPhone ? (
             <div className="space-y-2">
               <a
                 href={`tel:${trustedPhone.replace(/[^0-9+]/g, '')}`}
-                className="w-full p-3.5 rounded-2xl bg-teal-950/80 hover:bg-teal-900 border border-teal-500/50 text-teal-100 flex items-center justify-between transition active:scale-[0.98]"
+                className="w-full p-4 rounded-2xl bg-magenta text-bg-black hover:bg-magenta-deep flex items-center justify-between transition active:scale-[0.98] shadow-md"
               >
-                <div className="flex items-center space-x-2.5">
-                  <PhoneCall className="w-4 h-4 text-teal-400 shrink-0" />
+                <div className="flex items-center space-x-3">
+                  <PhoneCall className="w-5 h-5 text-bg-black shrink-0" />
                   <div className="text-left">
-                    <span className="font-semibold text-xs block">Call {trustedName || 'Trusted Contact'}</span>
-                    <span className="text-[10px] text-teal-300/80 font-mono">{trustedPhone}</span>
+                    <span className="font-bold text-sm block font-display tracking-wider">CALL {trustedName || 'TRUSTED CONTACT'}</span>
+                    <span className="text-xs font-mono text-bg-black/80 font-semibold">{trustedPhone}</span>
                   </div>
                 </div>
-                <span className="text-xs font-semibold bg-teal-900 px-2.5 py-1 rounded-full border border-teal-500/40">
-                  Call →
+                <span className="text-xs font-bold bg-bg-black text-magenta px-3 py-1 rounded-full">
+                  CALL →
                 </span>
               </a>
 
               <button
                 onClick={handleShareLocationSms}
                 disabled={isLocatingSms}
-                className="w-full p-3.5 rounded-2xl bg-charcoal-900 hover:bg-charcoal-850 border border-charcoal-700 text-teal-300 flex items-center justify-between transition active:scale-[0.98] text-xs font-medium"
+                className="w-full p-4 rounded-2xl bg-cream hover:bg-cream/80 border border-black/10 text-cream-ink flex items-center justify-between transition active:scale-[0.98] text-xs font-semibold"
               >
                 <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-teal-400 shrink-0" />
+                  <MapPin className="w-4 h-4 text-magenta shrink-0" />
                   <span>
                     {isLocatingSms ? 'Locating...' : `Share location via SMS to ${trustedName || 'Trusted Contact'}`}
                   </span>
                 </div>
                 {isLocatingSms ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-teal-400" />
+                  <Loader2 className="w-4 h-4 animate-spin text-magenta" />
                 ) : (
-                  <span className="text-[11px] font-mono text-charcoal-300 bg-charcoal-800 px-2 py-0.5 rounded border border-charcoal-700">
+                  <span className="text-xs font-mono text-cream-ink bg-white px-2.5 py-1 rounded-full border border-black/10 font-bold">
                     SMS →
                   </span>
                 )}
               </button>
             </div>
           ) : (
-            <div className="bg-charcoal-900/90 border border-charcoal-700 p-3.5 rounded-2xl flex items-center justify-between text-xs">
-              <div className="text-left pr-2">
-                <span className="text-charcoal-200 font-medium block">Add a trusted contact</span>
-                <span className="text-[10px] text-charcoal-400">Set up a contact in Settings for 1-tap calls & location SMS here.</span>
+            <div className="bg-cream border border-black/10 p-4 rounded-2xl flex items-center justify-between text-xs">
+              <div className="text-left pr-2 space-y-0.5">
+                <span className="text-cream-ink font-bold block text-sm">Add a trusted contact</span>
+                <span className="text-xs text-cream-ink/70">Set up a contact in Settings for 1-tap calls & location SMS here.</span>
               </div>
               <button
                 onClick={() => {
                   onClose();
                   onOpenSettings();
                 }}
-                className="px-3 py-1.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700 text-teal-400 font-medium text-[11px] shrink-0 flex items-center space-x-1 transition"
+                className="px-4 py-2 rounded-full bg-magenta text-bg-black font-bold text-xs shrink-0 transition shadow-sm"
               >
-                <span>Settings</span>
-                <ArrowRight className="w-3 h-3" />
+                Configure
               </button>
             </div>
           )}
         </div>
-
-        {/* Disclaimer */}
-        <p className="text-[10px] text-charcoal-400 text-center pt-2 border-t border-charcoal-700/60 leading-tight">
-          These are national helplines. In immediate danger, call 112 first.
-        </p>
 
       </div>
     </div>

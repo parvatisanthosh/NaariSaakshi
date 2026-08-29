@@ -493,13 +493,13 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
           </div>
           <div className="flex items-center space-x-2">
             {onRecordCall && (
-              <button
-                onClick={onRecordCall}
-                className="px-4 py-3 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-teal-500/40 text-teal-300 font-display text-sm tracking-wider transition flex items-center space-x-1.5 active:scale-95"
-              >
-                <PhoneCall className="w-4 h-4 text-teal-400" />
-                <span>RECORD CALL</span>
-              </button>
+                <button
+                  onClick={onRecordCall}
+                  className="px-4 py-3 rounded-full bg-white/5 hover:bg-magenta hover:text-bg-black border border-magenta/40 text-magenta font-display text-sm tracking-wider transition flex items-center space-x-1.5 active:scale-95"
+                >
+                  <PhoneCall className="w-4 h-4 text-magenta" />
+                  <span>RECORD CALL</span>
+                </button>
             )}
             <button
               onClick={onLogNew}

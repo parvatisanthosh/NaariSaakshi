@@ -8,7 +8,7 @@ export default {
     extend: {
       colors: {
         'bg-black': {
-          DEFAULT: '#0D0B10',
+          DEFAULT: 'rgb(var(--bg-black-rgb) / <alpha-value>)',
         },
         magenta: {
           DEFAULT: '#E8368F',
@@ -22,8 +22,8 @@ export default {
           ink: '#1A1410',
         },
         text: {
-          light: '#F5F1F3',
-          muted: '#c9c3cc',
+          light: 'rgb(var(--text-light-rgb) / <alpha-value>)',
+          muted: 'rgb(var(--text-muted-rgb) / <alpha-value>)',
         },
         // Category tag specific colors
         catVerbal: '#a8a2a8',

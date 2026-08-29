@@ -117,7 +117,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-magenta hover:text-magenta-deep transition"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Timeline</span>
@@ -200,7 +200,60 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         )}
       </section>
 
-      {/* Quick Exit Configuration */}
+      {/* Theme Mode Selector Section */}
+      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/40 flex items-center justify-center text-magenta">
+            <Globe className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-display text-2xl text-cream-ink tracking-wide block">VISUAL THEME & MODE</span>
+            <span className="text-xs text-cream-ink/70 font-medium">Switch between Dark Mode, Light Mode, or Discreet Stealth Mode</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <button
+            onClick={() => {
+              onUpdateSettings({ ...settings, theme: 'dark' });
+              showNotice('Switched to Dark Mode theme.');
+            }}
+            className={`p-5 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between shadow-sm ${
+              (settings.theme || 'dark') === 'dark'
+                ? 'bg-bg-black text-text-light border-magenta shadow-md ring-2 ring-magenta/40'
+                : 'bg-cream/30 hover:bg-cream text-cream-ink border-black/10'
+            }`}
+          >
+            <div>
+              <span className="font-display text-2xl block tracking-wide">DARK MODE</span>
+              <span className="text-xs opacity-80 block">Dark background with magenta glows</span>
+            </div>
+            {(settings.theme || 'dark') === 'dark' && (
+              <span className="w-3 h-3 rounded-full bg-magenta"></span>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              onUpdateSettings({ ...settings, theme: 'light' });
+              showNotice('Switched to Light Mode theme.');
+            }}
+            className={`p-5 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between shadow-sm ${
+              settings.theme === 'light'
+                ? 'bg-magenta text-bg-black border-magenta font-bold shadow-lg scale-[1.01]'
+                : 'bg-cream/30 hover:bg-cream text-cream-ink border-black/10'
+            }`}
+          >
+            <div>
+              <span className="font-display text-2xl block tracking-wide">LIGHT MODE</span>
+              <span className="text-xs opacity-80 block">Clean cream & white high contrast</span>
+            </div>
+            {settings.theme === 'light' && (
+              <span className="w-3 h-3 rounded-full bg-bg-black"></span>
+            )}
+          </button>
+        </div>
+      </section>
       <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">

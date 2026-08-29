@@ -6,21 +6,69 @@
 
 @layer base {
   :root {
-    --bg-black: #0D0B10;
+    --bg-black-rgb: 13, 11, 16;
+    --text-light-rgb: 245, 241, 243;
+    --text-muted-rgb: 201, 195, 204;
     --magenta: #E8368F;
     --magenta-deep: #B81F6B;
     --violet: #7C5CFF;
     --cream: #F5E7DE;
     --cream-ink: #1A1410;
-    --text-light: #F5F1F3;
-    --text-muted: #c9c3cc;
+  }
+
+  /* Light Theme Overrides */
+  body.theme-light, [data-theme="light"] {
+    --bg-black-rgb: 248, 246, 240;
+    --text-light-rgb: 26, 20, 16;
+    --text-muted-rgb: 82, 75, 72;
+    --cream: #FFFFFF;
+    --cream-ink: #1A1410;
+    background-color: #F8F6F0 !important;
+    color: #1A1410 !important;
+  }
+
+  body.theme-light::before, [data-theme="light"]::before {
+    background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
+  }
+
+  body.theme-light header, [data-theme="light"] header {
+    background-color: rgba(248, 246, 240, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+  }
+
+  body.theme-light nav, [data-theme="light"] nav {
+    background-color: rgba(248, 246, 240, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+  }
+
+  body.theme-light .bg-bg-black, [data-theme="light"] .bg-bg-black {
+    background-color: #FFFFFF !important;
+    color: #1A1410 !important;
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+
+  body.theme-light .bg-white\/5, [data-theme="light"] .bg-white\/5 {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+  }
+
+  body.theme-light .border-white\/10, [data-theme="light"] .border-white\/10 {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+
+  body.theme-light .text-text-light, [data-theme="light"] .text-text-light {
+    color: #1A1410 !important;
+  }
+
+  body.theme-light .text-text-muted, [data-theme="light"] .text-text-muted {
+    color: #524B48 !important;
   }
 
   body {
     @apply bg-bg-black text-text-light antialiased min-h-screen selection:bg-magenta selection:text-bg-black relative;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background-color: var(--bg-black);
-    color: var(--text-light);
+    background-color: rgb(var(--bg-black-rgb));
+    color: rgb(var(--text-light-rgb));
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* Faint global static grain background */
@@ -46,11 +94,11 @@
   textarea:focus-visible,
   [tabindex]:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--bg-black), 0 0 0 4px var(--magenta) !important;
+    box-shadow: 0 0 0 2px rgb(var(--bg-black-rgb)), 0 0 0 4px var(--magenta) !important;
   }
 }
 
-/* Ambient Film Grain Animation (Used on Marketing Homepage) */
+/* Ambient Film Grain Animation */
 @keyframes grain-pan {
   0% { background-position: 0 0; }
   100% { background-position: 100px 100px; }
@@ -96,7 +144,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-black);
+  background: rgb(var(--bg-black-rgb));
 }
 
 ::-webkit-scrollbar-thumb {
@@ -108,27 +156,27 @@
   background: var(--magenta);
 }
 
-/* Leaflet Dark Mode Customizations */
+/* Leaflet Map Styling */
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background-color: #1a1d24 !important;
-  color: #e2e8f0 !important;
-  border: 1px solid #334155 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
-  border-radius: 12px !important;
+  background-color: #ffffff !important;
+  color: #1A1410 !important;
+  border: 1px solid rgba(0,0,0,0.1) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 16px !important;
 }
 .leaflet-popup-content {
   margin: 12px 14px !important;
   line-height: 1.4 !important;
 }
 .leaflet-popup-close-button {
-  color: #94a3b8 !important;
+  color: #524B48 !important;
   padding: 6px !important;
 }
 .leaflet-popup-close-button:hover {
-  color: #f87171 !important;
+  color: #E8368F !important;
 }
 .leaflet-container {
-  background-color: #12151c !important;
+  background-color: #f8f6f0 !important;
   font-family: inherit !important;
   border-radius: 16px;
   z-index: 10;

@@ -108,7 +108,7 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-magenta hover:text-magenta-deep transition"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Timeline</span>
