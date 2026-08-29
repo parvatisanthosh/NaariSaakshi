@@ -16,8 +16,22 @@
     --cream-ink: #1A1410;
   }
 
-  /* High-Contrast Pure Black & White Light Theme Overrides */
-  body.theme-light, [data-theme="light"] {
+  /* Default Dark Mode Styling */
+  body, body.theme-dark {
+    --bg-black-rgb: 13, 11, 16;
+    --text-light-rgb: 245, 241, 243;
+    --text-muted-rgb: 201, 195, 204;
+    background-color: #0D0B10 !important;
+    color: #F5F1F3 !important;
+  }
+
+  body.theme-dark .bg-bg-black {
+    background-color: #0D0B10 !important;
+    color: #F5F1F3 !important;
+  }
+
+  /* Explicit Light Theme Overrides (Active ONLY when body has theme-light class) */
+  body.theme-light {
     --bg-black-rgb: 255, 255, 255;
     --text-light-rgb: 0, 0, 0;
     --text-muted-rgb: 60, 60, 60;
@@ -27,51 +41,51 @@
     color: #000000 !important;
   }
 
-  body.theme-light::before, [data-theme="light"]::before {
+  body.theme-light::before {
     background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
   }
 
-  body.theme-light header, [data-theme="light"] header {
+  body.theme-light header {
     background-color: rgba(255, 255, 255, 0.95) !important;
     border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
-  body.theme-light nav, [data-theme="light"] nav {
+  body.theme-light nav {
     background-color: rgba(255, 255, 255, 0.95) !important;
     border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
-  body.theme-light .bg-bg-black, [data-theme="light"] .bg-bg-black {
+  body.theme-light .bg-bg-black {
     background-color: #FFFFFF !important;
     color: #000000 !important;
     border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
-  body.theme-light .bg-white\/5, [data-theme="light"] .bg-white\/5 {
+  body.theme-light .bg-white\/5 {
     background-color: rgba(0, 0, 0, 0.04) !important;
   }
 
-  body.theme-light .bg-white\/10, [data-theme="light"] .bg-white\/10 {
+  body.theme-light .bg-white\/10 {
     background-color: rgba(0, 0, 0, 0.06) !important;
   }
 
-  body.theme-light .border-white\/10, [data-theme="light"] .border-white\/10 {
+  body.theme-light .border-white\/10 {
     border-color: rgba(0, 0, 0, 0.15) !important;
   }
 
-  body.theme-light .text-text-light, [data-theme="light"] .text-text-light {
+  body.theme-light .text-text-light {
     color: #000000 !important;
   }
 
-  body.theme-light .text-text-muted, [data-theme="light"] .text-text-muted {
+  body.theme-light .text-text-muted {
     color: #444444 !important;
   }
 
   body {
     @apply bg-bg-black text-text-light antialiased min-h-screen selection:bg-magenta selection:text-bg-black relative;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    background-color: rgb(var(--bg-black-rgb));
-    color: rgb(var(--text-light-rgb));
+    background-color: #0D0B10;
+    color: #F5F1F3;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 

@@ -116,17 +116,24 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
         </div>
       )}
 
-      {/* Top Banner */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 shadow-sm space-y-2">
-        <div className="flex items-center space-x-2 text-teal-400 font-semibold text-xs uppercase tracking-wider">
-          <FileText className="w-4 h-4" />
-          <span>Complaint & Evidence Report Generator</span>
+      {/* SECTION 1: TOP HERO BANNER (High-Contrast Theme Aware) */}
+      <section className="rounded-3xl bg-bg-black border border-white/10 p-8 sm:p-14 shadow-2xl relative z-10 w-full space-y-4 film-grain">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 rounded-2xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-lg">
+            <FileText className="w-6 h-6 text-bg-black" />
+          </div>
+          <div>
+            <span className="text-xs font-mono font-bold tracking-widest text-magenta uppercase block">LEGAL & HR REPORT GENERATOR</span>
+            <h1 className="font-display text-4xl sm:text-6xl tracking-wide text-text-light leading-none">
+              COMPILE COMPLAINT-READY DOCUMENT
+            </h1>
+          </div>
         </div>
 
-        <p className="text-sm sm:text-base text-cream-ink/80 leading-relaxed font-medium max-w-4xl">
+        <p className="text-sm sm:text-base text-text-muted leading-relaxed font-medium max-w-4xl">
           Select target destination, enter details, and compile your timestamped incident logs into a clean, professional document ready for HR, POSH committees, or legal review.
         </p>
-      </div>
+      </section>
 
       {/* SECTION 2: DESTINATION FORMAT SELECTION (Light Cards) */}
       <section className="space-y-4 relative z-10 w-full">

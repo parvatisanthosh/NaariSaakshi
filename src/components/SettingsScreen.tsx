@@ -125,17 +125,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
       )}
 
-      {/* Title */}
-      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 shadow-sm space-y-2">
-        <div className="flex items-center space-x-2 text-teal-400 font-semibold text-xs uppercase tracking-wider">
-          <Shield className="w-4 h-4" />
-          <span>Security & Personal Data Control</span>
+      {/* SECTION 1: TOP HERO BANNER (High-Contrast Theme Aware) */}
+      <section className="rounded-3xl bg-bg-black border border-white/10 p-8 sm:p-14 shadow-2xl relative z-10 w-full space-y-4 film-grain">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 rounded-2xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-lg">
+            <Shield className="w-6 h-6 text-bg-black" />
+          </div>
+          <div>
+            <span className="text-xs font-mono font-bold tracking-widest text-magenta uppercase block">SECURITY & PERSONAL DATA CONTROL</span>
+            <h1 className="font-display text-4xl sm:text-6xl tracking-wide text-text-light leading-none">
+              PRIVACY & APP SETTINGS
+            </h1>
+          </div>
         </div>
 
-        <p className="text-sm sm:text-base text-cream-ink/80 leading-relaxed font-medium max-w-4xl">
+        <p className="text-sm sm:text-base text-text-muted leading-relaxed font-medium max-w-4xl">
           Your data is stored 100% locally in your browser. Nothing is sent to central servers without your explicit action.
         </p>
-      </div>
+      </section>
 
       {statusMessage && (
         <div className="bg-magenta/15 border border-magenta rounded-2xl p-4 text-xs font-bold text-magenta flex items-center space-x-2 shadow-md">
