@@ -880,6 +880,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                     <option value="Digital">Digital</option>
                     <option value="Stalking">Stalking</option>
                     <option value="Quid-Pro-Quo">Quid-Pro-Quo</option>
+                    <option value="Intimidation / Non-verbal">Intimidation / Non-verbal</option>
                     <option value="Financial / Economic">Financial / Economic</option>
                     <option value="Other">Other</option>
                   </select>

@@ -5,6 +5,7 @@ export type CategoryType =
   | 'Stalking' 
   | 'Quid-Pro-Quo' 
   | 'Financial / Economic'
+  | 'Intimidation / Non-verbal'
   | 'Other';
 
 export interface PersonInvolved {
@@ -16,8 +17,8 @@ export interface PersonInvolved {
 export interface Attachment {
   id: string;
   name: string;
-  type: 'image' | 'document' | 'audio';
-  dataUrl?: string; // Base64 data URL for images
+  type: 'image' | 'document' | 'audio' | 'video';
+  dataUrl?: string; // Base64 data URL for images/video/audio
   size?: number;
   uploadedAt: string;
   isLiveCapture?: boolean;
@@ -48,6 +49,7 @@ export interface Incident {
   attachments: Attachment[];
   user_edited: boolean;
   tags: string[];
+  isQuickCaptureDraft?: boolean;
 }
 
 export interface AppSettings {
@@ -55,6 +57,8 @@ export interface AppSettings {
   pinCode: string; // 4 digit string
   quickExitEnabled: boolean;
   quickExitUrl: string; // e.g., 'https://www.google.com' or 'https://weather.com'
+  trustedContactName?: string;
+  trustedContactPhone?: string;
   localOnlyStorage: boolean;
   theme: 'dark' | 'light' | 'stealth';
   demoMode: boolean;

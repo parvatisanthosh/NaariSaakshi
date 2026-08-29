@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, Calendar, MapPin, User, Users, Tag, Trash2, Edit3, Save, X, Paperclip, AlertOctagon, Check, Mic, Camera, Plus, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, User, Users, Tag, Trash2, Edit3, Save, X, Paperclip, AlertOctagon, Check, Mic, Camera, Plus, Clock, PhoneCall } from 'lucide-react';
 import { CategoryType, Incident, Attachment } from '../types';
 import { CameraCaptureModal } from './CameraCaptureModal';
 import { calculatePoshDeadline } from '../poshDeadlineHelper';
@@ -257,16 +257,24 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
               </ul>
             </div>
 
-            {/* Audio Attachments / Raw Voice Evidence */}
+            {/* Audio Attachments / Call Recordings / Raw Evidence */}
             {attachmentsList.some(a => a.type === 'audio' || a.captureMethod === 'voice_recording') && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-teal-400 uppercase tracking-wider flex items-center space-x-1.5">
-                    <Mic className="w-4 h-4 text-teal-400" />
-                    <span>🎙️ Original Voice Recording (Raw Evidence)</span>
+                    {incident.tags?.includes('Call Recording') ? (
+                      <PhoneCall className="w-4 h-4 text-teal-400" />
+                    ) : (
+                      <Mic className="w-4 h-4 text-teal-400" />
+                    )}
+                    <span>
+                      {incident.tags?.includes('Call Recording')
+                        ? '🎙️ Call Recording (Original Raw Audio Source)'
+                        : '🎙️ Original Voice Recording (Raw Evidence)'}
+                    </span>
                   </h3>
                   <span className="text-[10px] bg-teal-950 text-teal-300 px-2 py-0.5 rounded border border-teal-800 font-medium">
-                    Unedited Audio
+                    {incident.tags?.includes('Call Recording') ? 'Call Evidence Source' : 'Unedited Audio'}
                   </span>
                 </div>
                 {attachmentsList.filter(a => a.type === 'audio' || a.captureMethod === 'voice_recording').map(att => (
@@ -407,6 +415,7 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
                   <option value="Digital">Digital</option>
                   <option value="Stalking">Stalking</option>
                   <option value="Quid-Pro-Quo">Quid-Pro-Quo</option>
+                  <option value="Intimidation / Non-verbal">Intimidation / Non-verbal</option>
                   <option value="Financial / Economic">Financial / Economic</option>
                   <option value="Other">Other</option>
                 </select>

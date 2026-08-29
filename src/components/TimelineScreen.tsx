@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter, ShieldCheck, Heart, Clock } from 'lucide-react';
+import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter, ShieldCheck, Heart, Clock, Video, PhoneCall } from 'lucide-react';
 import { Incident, CategoryType } from '../types';
 import { analyzeIncidentPatterns } from '../aiEngine';
 import { calculatePoshDeadline } from '../poshDeadlineHelper';
@@ -8,6 +8,7 @@ interface TimelineScreenProps {
   incidents: Incident[];
   onSelectIncident: (incident: Incident) => void;
   onLogNew: () => void;
+  onRecordCall: () => void;
   onViewPatterns: () => void;
 }
 
@@ -15,6 +16,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
   incidents,
   onSelectIncident,
   onLogNew,
+  onRecordCall,
   onViewPatterns
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +28,10 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
   }, [incidents]);
 
   const topPatternCluster = patternInsight.clusters.find(c => c.count >= 2);
+
+  const unfinishedDraftsCount = useMemo(() => {
+    return incidents.filter(i => i.isQuickCaptureDraft).length;
+  }, [incidents]);
 
   // Filtered and Sorted Incidents (Reverse chronological - Newest first)
   const filteredIncidents = useMemo(() => {
@@ -55,7 +61,11 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
       case 'Digital':
         return 'bg-teal-950/80 text-teal-300 border-teal-700/60';
       case 'Stalking':
+        return 'bg-rose-950/80 text-rose-300 border-rose-700/60';
+      case 'Intimidation / Non-verbal':
         return 'bg-indigo-950/80 text-indigo-300 border-indigo-700/60';
+      case 'Financial / Economic':
+        return 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60';
       default:
         return 'bg-charcoal-800 text-charcoal-300 border-charcoal-700';
     }
@@ -99,6 +109,19 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-28 space-y-6">
+
+      {/* Unfinished Quick Capture Drafts Reminder Banner */}
+      {unfinishedDraftsCount > 0 && (
+        <div className="bg-amber-950/80 border border-amber-500/50 rounded-2xl p-4 flex items-center justify-between text-amber-200 text-xs shadow-md">
+          <div className="flex items-center space-x-2.5">
+            <Video className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              You have <strong>{unfinishedDraftsCount}</strong> quick capture draft{unfinishedDraftsCount > 1 ? 's' : ''} to add details to when you're ready.
+            </span>
+          </div>
+          <span className="text-[10px] text-amber-300 underline font-semibold shrink-0 ml-2">Tap entry to complete</span>
+        </div>
+      )}
       
       {/* Pattern Warning Banner if 2+ incidents detected */}
       {topPatternCluster && (
@@ -130,18 +153,28 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
       )}
 
       {/* Prominent Log Incident Quick Banner */}
-      <div className="flex items-center justify-between bg-charcoal-800/60 border border-charcoal-700/80 rounded-2xl p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-charcoal-800/60 border border-charcoal-700/80 rounded-2xl p-4">
         <div>
           <h2 className="text-base font-semibold text-charcoal-100">Incident Timeline</h2>
           <p className="text-xs text-charcoal-400 mt-0.5">{incidents.length} secure record{incidents.length !== 1 ? 's' : ''} stored locally</p>
         </div>
-        <button
-          onClick={onLogNew}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white font-medium text-xs transition shadow-md shadow-teal-900/30 flex items-center space-x-1.5 active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Log Incident</span>
-        </button>
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onRecordCall}
+            className="px-3 py-2 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 border border-teal-500/40 text-teal-300 font-medium text-xs transition flex items-center space-x-1.5 active:scale-95"
+          >
+            <PhoneCall className="w-3.5 h-3.5 text-teal-400" />
+            <span>Record a Call</span>
+          </button>
+          <button
+            onClick={onLogNew}
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white font-medium text-xs transition shadow-md shadow-teal-900/30 flex items-center space-x-1.5 active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Log Incident</span>
+          </button>
+        </div>
       </div>
 
       {/* Search and Category Filter Bar */}
@@ -160,7 +193,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
 
         {/* Category Pills */}
         <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
-          {['All', 'Verbal', 'Physical', 'Digital', 'Stalking', 'Quid-Pro-Quo'].map(cat => (
+          {['All', 'Verbal', 'Physical', 'Digital', 'Stalking', 'Quid-Pro-Quo', 'Intimidation / Non-verbal', 'Financial / Economic', 'Other'].map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -210,9 +243,15 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                     <span>{dateFormatted} at {timeFormatted}</span>
                   </div>
 
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${getCategoryColor(incident.category)}`}>
-                    {incident.category}
-                  </span>
+                  {incident.isQuickCaptureDraft ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950 text-amber-300 border border-amber-700/80">
+                      ⚠️ Quick Capture — needs details
+                    </span>
+                  ) : (
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${getCategoryColor(incident.category)}`}>
+                      {incident.category}
+                    </span>
+                  )}
                 </div>
 
                 {/* Summary */}

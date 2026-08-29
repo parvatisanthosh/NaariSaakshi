@@ -1,20 +1,24 @@
 import React from 'react';
-import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield } from 'lucide-react';
+import { Home, PlusCircle, PieChart, FileText, Settings, ExternalLink, Shield, PhoneCall, Video } from 'lucide-react';
 
-export type ActiveTab = 'timeline' | 'log' | 'patterns' | 'report' | 'settings';
+export type ActiveTab = 'timeline' | 'log' | 'patterns' | 'report' | 'settings' | 'quick-capture';
 
 interface NavbarProps {
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
   quickExitEnabled: boolean;
   quickExitUrl: string;
+  onOpenSos: () => void;
+  onOpenQuickCapture: () => void;
 }
 
 export const Navigation: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   quickExitEnabled,
-  quickExitUrl
+  quickExitUrl,
+  onOpenSos,
+  onOpenQuickCapture
 }) => {
   const handleQuickExit = () => {
     window.location.href = quickExitUrl || 'https://weather.com';
@@ -38,17 +42,40 @@ export const Navigation: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Discreet Quick Exit Button */}
-          {quickExitEnabled && (
+          {/* Action Buttons: Quick Capture, SOS & Quick Exit */}
+          <div className="flex items-center space-x-1.5 sm:space-x-2">
+            {/* One-Tap Quick Capture Button */}
             <button
-              onClick={handleQuickExit}
-              title="Quick Exit - Redirect immediately"
-              className="px-3 py-1.5 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700/80 text-charcoal-300 hover:text-charcoal-100 text-xs font-medium flex items-center space-x-1.5 transition active:scale-95 shadow-sm"
+              onClick={onOpenQuickCapture}
+              title="Quick Capture - Record live evidence"
+              className="px-2.5 sm:px-3 py-1.5 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-rose-500/50 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center space-x-1 sm:space-x-1.5 transition active:scale-95 shadow-sm"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-accent-rose/80" />
-              <span>Quick Exit</span>
+              <Video className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden xs:inline">Quick Capture</span>
             </button>
-          )}
+
+            {/* Always-visible Persistent SOS Button */}
+            <button
+              onClick={onOpenSos}
+              title="Emergency SOS Helplines"
+              className="px-2.5 sm:px-3 py-1.5 rounded-full bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center space-x-1 sm:space-x-1.5 transition active:scale-95 shadow-sm"
+            >
+              <PhoneCall className="w-3.5 h-3.5 text-rose-400" />
+              <span>SOS</span>
+            </button>
+
+            {/* Discreet Quick Exit Button */}
+            {quickExitEnabled && (
+              <button
+                onClick={handleQuickExit}
+                title="Quick Exit - Redirect immediately"
+                className="px-2.5 sm:px-3 py-1.5 rounded-full bg-charcoal-800 hover:bg-charcoal-700 border border-charcoal-700/80 text-charcoal-300 hover:text-charcoal-100 text-xs font-medium flex items-center space-x-1 sm:space-x-1.5 transition active:scale-95 shadow-sm"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-accent-rose/80" />
+                <span className="hidden xs:inline">Quick Exit</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ShieldAlert, ArrowRight, X } from 'lucide-react';
 import { ActiveTab, Navigation } from './components/Navigation';
 import { PinLockModal } from './components/PinLockModal';
+import { SosPanelModal } from './components/SosPanelModal';
+import { QuickCaptureScreen } from './components/QuickCaptureScreen';
 import { TimelineScreen } from './components/TimelineScreen';
 import { LogIncidentScreen } from './components/LogIncidentScreen';
 import { IncidentDetailScreen } from './components/IncidentDetailScreen';
@@ -18,8 +20,9 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>(StorageService.getSettings());
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   
-  // Security PIN lock state
+  // Security PIN lock state & SOS panel state
   const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [showSosPanel, setShowSosPanel] = useState<boolean>(false);
 
   // Pattern Alert Banner state
   const [patternBanner, setPatternBanner] = useState<{
@@ -158,6 +161,12 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSaveQuickCaptureDraft = async (newDraft: Incident) => {
+    const updatedList = await StorageService.addIncident(newDraft);
+    setIncidents(updatedList);
+    setActiveTab('timeline');
+  };
+
   // Update Incident Handler
   const handleUpdateIncident = async (updated: Incident) => {
     const updatedList = await StorageService.updateIncident(updated);
@@ -223,6 +232,23 @@ export const App: React.FC = () => {
         }}
         quickExitEnabled={settings.quickExitEnabled}
         quickExitUrl={settings.quickExitUrl}
+        onOpenSos={() => setShowSosPanel(true)}
+        onOpenQuickCapture={() => {
+          setSelectedIncident(null);
+          setActiveTab('quick-capture');
+        }}
+      />
+
+      {/* Emergency SOS Panel Modal */}
+      <SosPanelModal
+        isOpen={showSosPanel}
+        onClose={() => setShowSosPanel(false)}
+        trustedName={settings.trustedContactName}
+        trustedPhone={settings.trustedContactPhone}
+        onOpenSettings={() => {
+          setSelectedIncident(null);
+          setActiveTab('settings');
+        }}
       />
 
       {/* Pattern Threshold Crossing Notification Banner */}
@@ -278,6 +304,15 @@ export const App: React.FC = () => {
                 onSelectIncident={(inc) => setSelectedIncident(inc)}
                 onLogNew={() => setActiveTab('log')}
                 onViewPatterns={() => setActiveTab('patterns')}
+              />
+            )}
+
+            {activeTab === 'quick-capture' && (
+              <QuickCaptureScreen
+                onSaveQuickCapture={handleSaveQuickCaptureDraft}
+                onCancel={() => setActiveTab('timeline')}
+                trustedContactName={settings.trustedContactName}
+                trustedContactPhone={settings.trustedContactPhone}
               />
             )}
 

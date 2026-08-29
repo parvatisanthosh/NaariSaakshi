@@ -32,17 +32,22 @@ export function normalizePersonName(rawName: string): string {
  * Explicit Rules:
  * 1. Digital (Highest priority medium): Unwanted photos, videos, filming/recording without consent,
  *    screenshots, chat DMs (Slack, WhatsApp, Teams, social media), emails, device-based tracking/messaging.
- * 2. Physical (Highest priority concrete act): Unwanted touching, grabbing, shoulder touch, blocking movement,
- *    slapping, physical proximity/contact.
+ * 2. Physical (Highest priority concrete act): Unwanted touching, grabbing, shoulder touch,
+ *    slapping, physical contact.
  * 3. Quid-Pro-Quo: Conditioning benefits (ratings, appraisal, promotion, opportunities, job security) on personal compliance.
- * 4. Stalking: Repeated following, trailing vehicle, waiting outside locations, tracking movement.
- * 5. Verbal: Language-based conduct, comments, remarks, jokes, raised voices WITHOUT any digital/recording/device component.
- * 6. Financial / Economic: Fine, pay deduction, salary withholding.
- * 7. Other: Ambiguous cases.
+ * 4. Stalking: Repeated following, trailing vehicle, waiting outside locations, tracking movement over time/locations.
+ * 5. Financial / Economic: Fine, pay deduction, salary withholding.
+ * 6. Intimidation / Non-verbal: Standalone non-verbal conduct with no direct verbal, physical, or digital contact.
+ *    E.g. prolonged staring, glare, lingering/loitering nearby without speaking or touching, blocking path without contact,
+ *    following at a distance without approach, hostile non-verbal gestures.
+ * 7. Verbal: Language-based conduct, comments, remarks, jokes, raised voices WITHOUT any digital/recording/device component.
+ * 8. Other: Ambiguous cases.
  * 
  * Example Anchors:
  * - "Someone recorded a video of me under my desk without asking" -> Digital
- * - "He touched my shoulder and offered a top appraisal if I attend dinner" -> Physical / Quid-Pro-Quo -> Physical
+ * - "He touched my shoulder and offered a top appraisal if I attend dinner" -> Physical
+ * - "Someone stared at me for several minutes in a way that felt off" -> Intimidation / Non-verbal
+ * - "He stood in the doorway blocking my exit without saying anything or touching me" -> Intimidation / Non-verbal
  * - "He shouted rude comments at me in the meeting" -> Verbal
  */
 export function classifyCategory(rawText: string): CategoryType {
@@ -60,7 +65,7 @@ export function classifyCategory(rawText: string): CategoryType {
   // 2. Physical priority check
   const isPhysical = 
     lower.includes('touch') || lower.includes('grab') || lower.includes('pushed') || lower.includes('slapped') ||
-    lower.includes('shoulder') || lower.includes('physical') || lower.includes('blocked') || lower.includes('held');
+    lower.includes('shoulder') || lower.includes('physical') || lower.includes('held');
 
   if (isPhysical) return 'Physical';
 
@@ -82,7 +87,16 @@ export function classifyCategory(rawText: string): CategoryType {
   const isFinancial = lower.includes('pay') || lower.includes('salary') || lower.includes('fine') || lower.includes('money');
   if (isFinancial) return 'Financial / Economic';
 
-  // 6. Verbal (Only if strictly spoken language with no digital/physical/quid-pro-quo acts)
+  // 6. Intimidation / Non-verbal check
+  const isIntimidation = 
+    lower.includes('stare') || lower.includes('staring') || lower.includes('stared') || lower.includes('glare') ||
+    lower.includes('glaring') || lower.includes('loitering') || lower.includes('lingering') || lower.includes('gesture') ||
+    lower.includes('blocking') || lower.includes('blocked') || lower.includes('standing close') || lower.includes('non-verbal') ||
+    lower.includes('silent') || lower.includes('gazing');
+
+  if (isIntimidation) return 'Intimidation / Non-verbal';
+
+  // 7. Verbal (Only if strictly spoken language)
   return 'Verbal';
 }
 

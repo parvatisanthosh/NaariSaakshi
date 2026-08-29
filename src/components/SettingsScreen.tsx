@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe } from 'lucide-react';
+import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe, PhoneCall } from 'lucide-react';
 import { AppSettings, Incident } from '../types';
+import { LEGAL_CALL_RECORDING_INFO } from './RecordCallScreen';
 
 interface SettingsScreenProps {
   settings: AppSettings;
@@ -23,9 +24,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 }) => {
   const [pinInput, setPinInput] = useState(settings.pinCode || '');
   const [quickExitUrl, setQuickExitUrl] = useState(settings.quickExitUrl || 'https://weather.com');
+  const [trustedNameInput, setTrustedNameInput] = useState(settings.trustedContactName || '');
+  const [trustedPhoneInput, setTrustedPhoneInput] = useState(settings.trustedContactPhone || '');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const handleSaveTrustedContact = () => {
+    onUpdateSettings({
+      ...settings,
+      trustedContactName: trustedNameInput.trim(),
+      trustedContactPhone: trustedPhoneInput.trim()
+    });
+    showNotice('Trusted contact details saved.');
+  };
 
   const handleTogglePin = () => {
     const nextPinEnabled = !settings.pinEnabled;
@@ -212,6 +224,67 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Trusted Contact Configuration for SOS */}
+      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-4 text-xs">
+        <div className="flex items-center space-x-2.5">
+          <PhoneCall className="w-4 h-4 text-rose-400" />
+          <div>
+            <span className="font-semibold text-charcoal-100 block">Trusted Emergency Contact (SOS Panel)</span>
+            <span className="text-[11px] text-charcoal-400">Add a personal contact for one-tap emergency calling and SMS location sharing</span>
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-charcoal-700/60 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-charcoal-300 font-medium mb-1">Contact Name</label>
+              <input
+                type="text"
+                value={trustedNameInput}
+                onChange={(e) => setTrustedNameInput(e.target.value)}
+                placeholder="e.g. Sister, Best Friend"
+                className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl px-3 py-2 text-charcoal-100 focus:outline-none focus:border-teal-500"
+              />
+            </div>
+            <div>
+              <label className="block text-charcoal-300 font-medium mb-1">Phone Number</label>
+              <input
+                type="tel"
+                value={trustedPhoneInput}
+                onChange={(e) => setTrustedPhoneInput(e.target.value)}
+                placeholder="e.g. +91 98765 43210"
+                className="w-full bg-charcoal-900 border border-charcoal-700 rounded-xl px-3 py-2 text-charcoal-100 focus:outline-none focus:border-teal-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleSaveTrustedContact}
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-medium rounded-xl text-xs transition"
+            >
+              Save Trusted Contact
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Call Recording Legal Information & Consent Card */}
+      <div className="bg-charcoal-800/80 border border-charcoal-700/80 rounded-2xl p-5 space-y-3 text-xs">
+        <div className="flex items-center space-x-2.5 text-teal-400 font-semibold uppercase tracking-wider">
+          <PhoneCall className="w-4 h-4" />
+          <span>About Call Recording & One-Party Consent</span>
+        </div>
+
+        <p className="text-charcoal-200 leading-relaxed">
+          {LEGAL_CALL_RECORDING_INFO.mainNotice}
+        </p>
+
+        <p className="text-[11px] text-charcoal-400 italic border-t border-charcoal-700/60 pt-2 leading-relaxed">
+          {LEGAL_CALL_RECORDING_INFO.legalNotice}
+        </p>
       </div>
 
       {/* Backup & Data Management */}
