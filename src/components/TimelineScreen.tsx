@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter, ShieldCheck, Heart, Shield, Lock, FileText, CheckCircle2, ExternalLink, ArrowRight, Sparkles, Volume2, Smartphone, LayoutGrid, PhoneCall, Bell, Clock, Video } from 'lucide-react';
+import { Calendar, MapPin, User, Tag, Plus, Search, AlertTriangle, ChevronRight, Paperclip, ShieldAlert, Filter, ShieldCheck, Heart, Shield, Lock, FileText, CheckCircle2, ExternalLink, ArrowRight, Sparkles, Volume2, Smartphone, LayoutGrid, PhoneCall, Bell, Clock, Video, Mic } from 'lucide-react';
 import { Incident, CategoryType } from '../types';
 import { analyzeIncidentPatterns } from '../aiEngine';
 import { calculatePoshDeadline } from '../poshDeadlineHelper';
@@ -216,7 +216,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
           {/* Left / Right Interactive Steps (Col 1 to 5) */}
           <div className="lg:col-span-5 space-y-4">
             
-            {/* Step 1: Volume Button SOS */}
+            {/* Step 1: 1-Tap Quick Capture */}
             <div 
               onMouseEnter={() => setActiveStep(1)}
               onClick={() => setActiveStep(1)}
@@ -232,15 +232,15 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                 1
               </div>
               <div className="flex items-center space-x-3">
-                <Volume2 className={`w-6 h-6 ${activeStep === 1 ? 'text-bg-black' : 'text-magenta'}`} />
-                <h3 className="font-display text-2xl tracking-wide">VOLUME BUTTON SOS</h3>
+                <Video className={`w-6 h-6 ${activeStep === 1 ? 'text-bg-black' : 'text-magenta'}`} />
+                <h3 className="font-display text-2xl tracking-wide">1-TAP QUICK CAPTURE</h3>
               </div>
               <p className={`text-xs sm:text-sm mt-2 leading-relaxed ${activeStep === 1 ? 'text-bg-black/90 font-medium' : 'text-cream-ink/80'}`}>
-                Press your phone's volume button 3 times in quick succession to instantly dispatch emergency SOS alerts.
+                Instantly record live video and audio evidence in-the-moment. Includes a Disguise Screen that hides the preview into a plain notes interface while recording continues.
               </p>
             </div>
 
-            {/* Step 2: In-App SOS Button */}
+            {/* Step 2: Persistent Helpline SOS */}
             <div 
               onMouseEnter={() => setActiveStep(2)}
               onClick={() => setActiveStep(2)}
@@ -256,15 +256,15 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                 2
               </div>
               <div className="flex items-center space-x-3">
-                <Smartphone className={`w-6 h-6 ${activeStep === 2 ? 'text-bg-black' : 'text-magenta'}`} />
-                <h3 className="font-display text-2xl tracking-wide">IN-APP SOS & EVIDENCE TAP</h3>
+                <PhoneCall className={`w-6 h-6 ${activeStep === 2 ? 'text-bg-black' : 'text-magenta'}`} />
+                <h3 className="font-display text-2xl tracking-wide">PERSISTENT HELPLINE SOS</h3>
               </div>
               <p className={`text-xs sm:text-sm mt-2 leading-relaxed ${activeStep === 2 ? 'text-bg-black/90 font-medium' : 'text-cream-ink/80'}`}>
-                One tap in the NaariSaakshi app starts live background audio transcription and alerts your trusted circle.
+                Always-visible SOS button provides 1-tap direct calls to 112 (Emergency), 181 (Women's Helpline), 1091, and Tele MANAS, plus 1-tap location SMS sharing to your trusted contact.
               </p>
             </div>
 
-            {/* Step 3: Home Screen SOS Widget */}
+            {/* Step 3: 1-Tap Call Recording */}
             <div 
               onMouseEnter={() => setActiveStep(3)}
               onClick={() => setActiveStep(3)}
@@ -280,11 +280,11 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                 3
               </div>
               <div className="flex items-center space-x-3">
-                <LayoutGrid className={`w-6 h-6 ${activeStep === 3 ? 'text-bg-black' : 'text-magenta'}`} />
-                <h3 className="font-display text-2xl tracking-wide">HOME SCREEN SOS WIDGET</h3>
+                <Mic className={`w-6 h-6 ${activeStep === 3 ? 'text-bg-black' : 'text-magenta'}`} />
+                <h3 className="font-display text-2xl tracking-wide">1-TAP CALL RECORDING</h3>
               </div>
               <p className={`text-xs sm:text-sm mt-2 leading-relaxed ${activeStep === 3 ? 'text-bg-black/90 font-medium' : 'text-cream-ink/80'}`}>
-                Trigger emergency logging directly from your home screen widget without even opening the full app.
+                Record phone calls on speakerphone under India's one-party consent law. Saves raw call audio as primary evidence and runs live rough transcription for your private records.
               </p>
             </div>
 
@@ -296,7 +296,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
             {/* Animated Floating Badges around phone */}
             <div className="absolute -top-2 left-4 sm:left-12 z-20 animate-bounce">
               <span className="px-3 py-1 rounded-full bg-magenta text-bg-black font-display font-bold text-xs shadow-xl tracking-wider uppercase">
-                {activeStep === 1 ? '⚡ 3-PRESS DETECTED' : activeStep === 2 ? '🎙️ VOICE AI RECORDING' : '📲 INSTANT WIDGET'}
+                {activeStep === 1 ? '📹 1-TAP QUICK CAPTURE' : activeStep === 2 ? '⚡ PERSISTENT HELPLINE SOS' : '🎙️ 1-TAP CALL RECORDING'}
               </span>
             </div>
 
@@ -330,45 +330,43 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                     <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
                       <div className="absolute inset-0 rounded-full bg-magenta/20 animate-ping" />
                       <div className="w-24 h-24 rounded-full bg-magenta text-bg-black flex flex-col items-center justify-center shadow-xl border-4 border-white">
-                        <Volume2 className="w-10 h-10 animate-bounce" />
+                        <Video className="w-10 h-10" />
                       </div>
                     </div>
                     <div>
-                      <span className="font-display text-2xl text-magenta tracking-wide block">VOLUME SOS ACTIVE</span>
-                      <p className="text-[11px] text-text-muted px-4">Hardware volume buttons pressed 3x. Alert dispatched to trusted network.</p>
+                      <span className="font-display text-2xl text-magenta tracking-wide block">1-TAP QUICK CAPTURE</span>
+                      <p className="text-[11px] text-text-muted px-4">Live video & audio recording initiated. Disguise notes screen active.</p>
                     </div>
                   </div>
                 )}
 
                 {activeStep === 2 && (
                   <div className="space-y-4 my-auto animate-fade-in">
-                    <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
+                    <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
                       <div className="absolute inset-0 rounded-full bg-magenta/30 animate-pulse ring-8 ring-magenta/20" />
-                      <div className="w-28 h-28 rounded-full bg-gradient-to-br from-magenta to-violet text-bg-black font-display font-bold text-3xl flex flex-col items-center justify-center shadow-[0_0_30px_rgba(232,54,143,0.8)] border-4 border-white">
-                        <span>SOS</span>
-                        <span className="text-[10px] font-mono tracking-widest text-bg-black/80">TAP ACTIVE</span>
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-magenta to-violet text-bg-black font-display font-bold flex flex-col items-center justify-center shadow-[0_0_30px_rgba(232,54,143,0.8)] border-4 border-white">
+                        <PhoneCall className="w-10 h-10" />
                       </div>
                     </div>
                     <div>
-                      <span className="font-display text-2xl text-text-light tracking-wide block">IN-APP JOURNALING</span>
-                      <p className="text-[11px] text-text-muted px-4">AI transcribing voice in real time with AES-GCM local storage.</p>
+                      <span className="font-display text-2xl text-magenta tracking-wide block">PERSISTENT HELPLINE SOS</span>
+                      <p className="text-[11px] text-text-muted px-4">1-Tap direct calls to 112, 181, 1091 & Tele MANAS with GPS SMS alert.</p>
                     </div>
                   </div>
                 )}
 
                 {activeStep === 3 && (
                   <div className="space-y-4 my-auto animate-fade-in">
-                    <div className="bg-white/10 border border-white/20 p-4 rounded-2xl space-y-3 text-left shadow-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-display text-magenta tracking-wider">HOME WIDGET</span>
-                        <span className="text-[9px] bg-magenta text-bg-black px-2 py-0.5 rounded-full font-bold">1-TAP</span>
+                    <div className="relative w-28 h-28 mx-auto flex items-center justify-center">
+                      <div className="absolute inset-0 rounded-full bg-magenta/20 animate-pulse" />
+                      <div className="w-24 h-24 rounded-full bg-magenta text-bg-black flex flex-col items-center justify-center shadow-xl border-4 border-white">
+                        <Mic className="w-10 h-10" />
                       </div>
-                      <p className="text-xs text-text-light font-semibold">Quick Emergency Dispatch</p>
-                      <button className="w-full py-2 bg-magenta text-bg-black font-display text-sm font-bold rounded-xl shadow-md">
-                        TRIGGER SOS
-                      </button>
                     </div>
-                    <p className="text-[11px] text-text-muted px-4">Direct widget trigger without unlocking or launching full browser.</p>
+                    <div>
+                      <span className="font-display text-2xl text-magenta tracking-wide block">1-TAP CALL RECORDING</span>
+                      <p className="text-[11px] text-text-muted px-4">Speakerphone audio recorded & live rough transcription generated for evidence.</p>
+                    </div>
                   </div>
                 )}
 
@@ -440,14 +438,29 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
         
         {/* Unfinished Quick Capture Drafts Reminder Banner */}
         {unfinishedDraftsCount > 0 && (
-          <div className="bg-amber-950/80 border border-amber-500/50 rounded-2xl p-4 flex items-center justify-between text-amber-200 text-xs shadow-md">
+          <div
+            onClick={() => {
+              const firstDraft = incidents.find(i => i.isQuickCaptureDraft);
+              if (firstDraft) onSelectIncident(firstDraft);
+            }}
+            className="bg-amber-950/80 border border-amber-500/50 hover:border-amber-400 rounded-2xl p-4 flex items-center justify-between text-amber-200 text-xs shadow-md cursor-pointer transition active:scale-[0.99]"
+          >
             <div className="flex items-center space-x-2.5">
               <Video className="w-4 h-4 text-amber-400 shrink-0" />
               <span>
                 You have <strong>{unfinishedDraftsCount}</strong> quick capture draft{unfinishedDraftsCount > 1 ? 's' : ''} to add details to when you're ready.
               </span>
             </div>
-            <span className="text-[10px] text-amber-300 underline font-semibold shrink-0 ml-2">Tap entry to complete</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const firstDraft = incidents.find(i => i.isQuickCaptureDraft);
+                if (firstDraft) onSelectIncident(firstDraft);
+              }}
+              className="text-[10px] text-amber-300 underline font-semibold shrink-0 ml-2 hover:text-amber-100"
+            >
+              Tap entry to complete
+            </button>
           </div>
         )}
 

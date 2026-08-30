@@ -1,28 +1,107 @@
-import React, { useState, useMemo } from 'react';
-import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check, AlertTriangle, AlertCircle, ArrowLeft } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { FileText, Download, Eye, CheckSquare, Square, ShieldCheck, Building2, ShieldAlert, BookOpen, Sparkles, Check, AlertTriangle, AlertCircle, ArrowLeft, Camera, PhoneCall, User } from 'lucide-react';
 import { Incident } from '../types';
 import { ReportConfig, ReportType, downloadPdfReport, generateReportDocumentText } from '../reportEngine';
+import { normalizePersonName } from '../aiEngine';
 
 interface ReportScreenProps {
   incidents: Incident[];
   onBack?: () => void;
+  onOpenRights?: () => void;
+  onOpenSos?: () => void;
 }
 
-export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack }) => {
+export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack, onOpenRights, onOpenSos }) => {
   const [reportType, setReportType] = useState<ReportType>('POSH');
   const [complainantName, setComplainantName] = useState('Ananya Sharma');
   const [complainantContact, setComplainantContact] = useState('+91 98765 43210');
   const [complainantAddress, setComplainantAddress] = useState('Bengaluru, Karnataka');
   const [respondentName, setRespondentName] = useState('Rohan Sharma');
   const [organizationOrDept, setOrganizationOrDept] = useState('Engineering Dept');
+  const [embedImageAttachments, setEmbedImageAttachments] = useState(true);
+  const [consentImageInclusion, setConsentImageInclusion] = useState(true);
   
-  // Selected incident IDs (default to all)
-  const [selectedIds, setSelectedIds] = useState<string[]>(() => incidents.map(i => i.id));
+  // Extract distinct respondents normalized using normalizePersonName
+  const distinctRespondents = useMemo(() => {
+    const map = new Map<string, { key: string; displayName: string; incidentCount: number }>();
+    let unknownCount = 0;
+
+    incidents.forEach(inc => {
+      if (inc.people_involved.length === 0) {
+        unknownCount++;
+      } else {
+        inc.people_involved.forEach(p => {
+          const normKey = normalizePersonName(p.name);
+          if (normKey && normKey !== 'unspecified' && normKey !== 'individual involved') {
+            if (!map.has(normKey)) {
+              map.set(normKey, { key: normKey, displayName: p.name, incidentCount: 0 });
+            }
+            map.get(normKey)!.incidentCount++;
+          } else {
+            unknownCount++;
+          }
+        });
+      }
+    });
+
+    const list = Array.from(map.values());
+    if (unknownCount > 0 || list.length === 0) {
+      list.push({
+        key: 'UNKNOWN_INDIVIDUAL',
+        displayName: 'Unknown / Unidentified Individual',
+        incidentCount: unknownCount
+      });
+    }
+
+    return list;
+  }, [incidents]);
+
+  const [selectedRespondentKey, setSelectedRespondentKey] = useState<string>(() => {
+    return distinctRespondents[0]?.key || 'UNKNOWN_INDIVIDUAL';
+  });
+
+  const selectableIncidents = useMemo(() => {
+    if (reportType === 'PERSONAL') {
+      return incidents;
+    }
+
+    if (!selectedRespondentKey) return incidents;
+
+    if (selectedRespondentKey === 'UNKNOWN_INDIVIDUAL') {
+      return incidents.filter(i =>
+        i.people_involved.length === 0 ||
+        i.people_involved.some(p => {
+          const norm = normalizePersonName(p.name);
+          return !norm || norm === 'unspecified' || norm === 'individual involved';
+        })
+      );
+    }
+
+    return incidents.filter(i =>
+      i.people_involved.some(p => normalizePersonName(p.name) === selectedRespondentKey)
+    );
+  }, [incidents, reportType, selectedRespondentKey]);
+
+  // Selected incident IDs (default to selectable)
+  const [selectedIds, setSelectedIds] = useState<string[]>(() => selectableIncidents.map(i => i.id));
+
+  useEffect(() => {
+    if (reportType !== 'PERSONAL') {
+      const match = distinctRespondents.find(r => r.key === selectedRespondentKey);
+      if (match) {
+        setRespondentName(match.displayName);
+      }
+      setSelectedIds(selectableIncidents.map(i => i.id));
+    } else {
+      setSelectedIds(incidents.map(i => i.id));
+    }
+  }, [reportType, selectedRespondentKey, distinctRespondents, selectableIncidents, incidents]);
   
-  // Preview & Export Modal State
+  // Preview, Export & Next Steps State
   const [showPreview, setShowPreview] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const [showNextStepsView, setShowNextStepsView] = useState(false);
 
   const selectedIncidents = useMemo(() => {
     return incidents.filter(i => selectedIds.includes(i.id));
@@ -62,10 +141,10 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
   }, [reportType, complainantName, complainantContact, respondentName, selectedIncidents, selectedIds]);
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === incidents.length) {
+    if (selectedIds.length === selectableIncidents.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(incidents.map(i => i.id));
+      setSelectedIds(selectableIncidents.map(i => i.id));
     }
   };
 
@@ -84,6 +163,8 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
     organizationOrDept,
     selectedIncidentIds: selectedIds,
     includeAttachmentsList: true,
+    embedImageAttachments,
+    consentImageInclusion,
     confidentialityNotice: true
   };
 
@@ -97,8 +178,174 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
     setShowExportConfirm(false);
     downloadPdfReport(incidents, config);
     setDownloadSuccess(true);
-    setTimeout(() => setDownloadSuccess(false), 3000);
+    setShowNextStepsView(true);
   };
+
+  if (showNextStepsView) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        {/* Top Back to Config Navigation Button */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowNextStepsView(false)}
+            className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
+          >
+            <ArrowLeft className="w-4 h-4 text-magenta" />
+            <span>Back to Report Configuration</span>
+          </button>
+        </div>
+
+        {/* Top Header */}
+        <div className="bg-charcoal-800 border border-charcoal-700 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+          
+          <div className="flex items-center space-x-3 text-teal-400">
+            <div className="w-10 h-10 rounded-full bg-teal-950 border border-teal-500/40 flex items-center justify-center">
+              <Check className="w-5 h-5 text-teal-400" />
+            </div>
+            <div>
+              <span className="text-[10px] text-teal-400 font-mono tracking-wider uppercase font-bold block">
+                PDF REPORT EXPORTED SUCCESSFULLY
+              </span>
+              <h2 className="text-xl font-bold text-charcoal-100">
+                {reportType === 'POSH'
+                  ? 'What to do with this document'
+                  : reportType === 'POLICE'
+                  ? 'What to do with this document'
+                  : 'Your record is saved'}
+              </h2>
+            </div>
+          </div>
+
+          {/* Branched Content */}
+          {reportType === 'POSH' && (
+            <div className="space-y-4 text-xs text-charcoal-200">
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3 bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-700">
+                  <span className="w-6 h-6 rounded-full bg-teal-950 text-teal-300 font-bold flex items-center justify-center shrink-0 border border-teal-800">
+                    1
+                  </span>
+                  <p className="leading-relaxed pt-0.5">
+                    Find your organization's Internal Complaints Committee (ICC). Every employer with 10+ employees is legally required to have one — ask HR for their contact details if you don't already know them.
+                  </p>
+                </div>
+
+                <div className="flex items-start space-x-3 bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-700">
+                  <span className="w-6 h-6 rounded-full bg-teal-950 text-teal-300 font-bold flex items-center justify-center shrink-0 border border-teal-800">
+                    2
+                  </span>
+                  <p className="leading-relaxed pt-0.5">
+                    Submit this document to the ICC, in writing, within your filing window (see the deadline shown on your incident timeline).
+                  </p>
+                </div>
+
+                <div className="flex items-start space-x-3 bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-700">
+                  <span className="w-6 h-6 rounded-full bg-teal-950 text-teal-300 font-bold flex items-center justify-center shrink-0 border border-teal-800">
+                    3
+                  </span>
+                  <p className="leading-relaxed pt-0.5">
+                    The ICC must acknowledge your complaint and begin their process — you're entitled to updates as it proceeds.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-charcoal-400 bg-charcoal-900/50 p-3 rounded-xl border border-charcoal-700/60 leading-relaxed italic">
+                This document organizes your account clearly — the ICC will evaluate it based on your written statement and any evidence attached, not because it was generated by this app.
+              </p>
+            </div>
+          )}
+
+          {reportType === 'POLICE' && (
+            <div className="space-y-4 text-xs text-charcoal-200">
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3 bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-700">
+                  <span className="w-6 h-6 rounded-full bg-teal-950 text-teal-300 font-bold flex items-center justify-center shrink-0 border border-teal-800">
+                    1
+                  </span>
+                  <p className="leading-relaxed pt-0.5">
+                    This is a draft to bring with you to a police station — it's not something to email or upload; you'll typically go in person to file it as an FIR.
+                  </p>
+                </div>
+
+                <div className="flex items-start space-x-3 bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-700">
+                  <span className="w-6 h-6 rounded-full bg-teal-950 text-teal-300 font-bold flex items-center justify-center shrink-0 border border-teal-800">
+                    2
+                  </span>
+                  <p className="leading-relaxed pt-0.5">
+                    Any police station is required to register your complaint (known as 'Zero FIR') even if the incident happened elsewhere, and forward it to the right station.
+                  </p>
+                </div>
+
+                <div className="flex items-start space-x-3 bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-700">
+                  <span className="w-6 h-6 rounded-full bg-teal-950 text-teal-300 font-bold flex items-center justify-center shrink-0 border border-teal-800">
+                    3
+                  </span>
+                  <p className="leading-relaxed pt-0.5">
+                    You're entitled to a free copy of the FIR once it's registered — ask for it and note the FIR number for any follow-up.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-charcoal-400 bg-charcoal-900/50 p-3 rounded-xl border border-charcoal-700/60 leading-relaxed italic">
+                This draft helps you present a clear, factual account — the police officer will still take your statement directly; treat this as a reference to keep your account consistent, not a replacement for that conversation.
+              </p>
+            </div>
+          )}
+
+          {reportType === 'PERSONAL' && (
+            <div className="space-y-4 text-xs text-charcoal-200">
+              <div className="bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-700 space-y-2">
+                <span className="font-semibold text-teal-300 text-sm block">Personal Archive Saved</span>
+                <p className="leading-relaxed text-charcoal-300">
+                  No action needed right now. Keep this document somewhere safe — you can revisit or export it again anytime, and add to it if anything else happens.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Universal Closing Element */}
+          <div className="pt-4 border-t border-charcoal-700 space-y-3 text-xs">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+              {onOpenRights && (
+                <button
+                  onClick={onOpenRights}
+                  className="px-3.5 py-2.5 rounded-xl bg-charcoal-900 hover:bg-charcoal-700 border border-charcoal-700 text-teal-300 font-medium flex items-center justify-center space-x-1.5 transition"
+                >
+                  <BookOpen className="w-4 h-4 text-teal-400" />
+                  <span>Read "Know Your Rights" Guide</span>
+                </button>
+              )}
+
+              {onOpenSos && (
+                <button
+                  onClick={onOpenSos}
+                  className="px-3.5 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-500/40 text-rose-200 font-medium flex items-center justify-center space-x-1.5 transition"
+                >
+                  <PhoneCall className="w-4 h-4 text-rose-400" />
+                  <span>Talk to Someone / Open SOS</span>
+                </button>
+              )}
+            </div>
+
+            <p className="text-[11px] text-charcoal-400 text-center leading-relaxed italic">
+              This is general guidance, not legal advice. Processes can vary — when possible, confirm next steps with your ICC, a lawyer, or a counselor.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowNextStepsView(false);
+                if (onBack) onBack();
+              }}
+              className="w-full py-3.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs transition shadow-lg flex items-center justify-center space-x-1.5"
+            >
+              <span>Done & Return to Timeline</span>
+              <ArrowLeft className="w-4 h-4 rotate-180" />
+            </button>
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-10 pb-28 relative">
@@ -212,6 +459,36 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
           2. DOCUMENT DETAILS & PARTIES INVOLVED
         </h2>
 
+        {reportType !== 'PERSONAL' && (
+          <div className="space-y-2 bg-cream/60 border border-black/10 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider flex items-center space-x-1.5">
+                <User className="w-4 h-4 text-magenta" />
+                <span>Select Single Respondent / Subject Person</span>
+              </label>
+              <span className="text-[10px] text-magenta font-semibold bg-magenta/10 px-2.5 py-0.5 rounded-full border border-magenta/20">
+                Formal Complaint Scoped
+              </span>
+            </div>
+
+            <select
+              value={selectedRespondentKey}
+              onChange={(e) => setSelectedRespondentKey(e.target.value)}
+              className="w-full bg-white border border-black/15 rounded-xl p-3 text-cream-ink font-bold text-xs focus:outline-none focus:border-magenta"
+            >
+              {distinctRespondents.map((resp) => (
+                <option key={resp.key} value={resp.key}>
+                  {resp.displayName} ({resp.incidentCount} incident{resp.incidentCount !== 1 ? 's' : ''})
+                </option>
+              ))}
+            </select>
+
+            <p className="text-[11px] text-cream-ink/70 italic leading-snug">
+              Formal complaints are filed against one respondent at a time. To report a different person, generate a separate document.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Complainant / Your Name</label>
@@ -263,20 +540,27 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
 
       {/* SECTION 4: INCIDENT CHECKLIST SELECTION (Light White Section) */}
       <section className="space-y-4 relative z-10 w-full">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl tracking-wider text-cream-ink uppercase">
-            3. SELECT INCIDENTS TO INCLUDE ({selectedIds.length} OF {incidents.length})
-          </h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="font-display text-2xl tracking-wider text-cream-ink uppercase">
+              3. SELECT INCIDENTS TO INCLUDE ({selectedIds.length} OF {selectableIncidents.length})
+            </h2>
+            {reportType !== 'PERSONAL' && (
+              <span className="text-xs text-cream-ink/70 font-semibold block">
+                Scoped to incidents involving {respondentName || 'selected respondent'}
+              </span>
+            )}
+          </div>
           <button
             onClick={toggleSelectAll}
-            className="text-magenta hover:underline font-bold text-xs uppercase tracking-wider"
+            className="text-magenta hover:underline font-bold text-xs uppercase tracking-wider shrink-0"
           >
-            {selectedIds.length === incidents.length ? 'Deselect All' : 'Select All'}
+            {selectedIds.length === selectableIncidents.length ? 'Deselect All' : 'Select All'}
           </button>
         </div>
 
         <div className="space-y-3">
-          {incidents.map(inc => {
+          {selectableIncidents.map(inc => {
             const isSelected = selectedIds.includes(inc.id);
             return (
               <div
@@ -346,6 +630,46 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
         )}
       </section>
 
+      {/* Evidence Image Embedding & Consent Checklist */}
+      <section className="bg-white border border-black/10 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4 relative z-10 w-full">
+        <div className="flex items-center space-x-2.5 text-magenta font-display text-xl uppercase tracking-wider">
+          <Camera className="w-5 h-5 text-magenta" />
+          <span>Evidence Image Embedding & Consent Checklist</span>
+        </div>
+
+        <div className="space-y-3 text-xs text-cream-ink">
+          <label className="flex items-start space-x-3 cursor-pointer bg-cream/50 p-3.5 rounded-2xl border border-black/10 hover:bg-cream transition">
+            <input
+              type="checkbox"
+              checked={embedImageAttachments}
+              onChange={(e) => setEmbedImageAttachments(e.target.checked)}
+              className="mt-0.5 rounded bg-white border-black/20 text-magenta focus:ring-magenta shrink-0"
+            />
+            <div>
+              <span className="font-bold block text-sm">Embed attached photo evidence directly into PDF pages</span>
+              <span className="text-cream-ink/70 text-[11px] block mt-0.5">
+                When checked, watermarked photos and attached image evidence are rendered directly onto the PDF pages below each incident log entry.
+              </span>
+            </div>
+          </label>
+
+          <label className="flex items-start space-x-3 cursor-pointer bg-cream/50 p-3.5 rounded-2xl border border-black/10 hover:bg-cream transition">
+            <input
+              type="checkbox"
+              checked={consentImageInclusion}
+              onChange={(e) => setConsentImageInclusion(e.target.checked)}
+              className="mt-0.5 rounded bg-white border-black/20 text-magenta focus:ring-magenta shrink-0"
+            />
+            <div>
+              <span className="font-bold block text-sm">Complainant Consent for Evidence Submission</span>
+              <span className="text-cream-ink/70 text-[11px] block mt-0.5">
+                "I confirm that I have reviewed the attached evidence photos and consent to including them in this formal complaint document."
+              </span>
+            </div>
+          </label>
+        </div>
+      </section>
+
       {/* SECTION 6: ACTION BUTTONS */}
       <section className="pt-4 flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full">
         <button
@@ -411,9 +735,18 @@ export const ReportScreen: React.FC<ReportScreenProps> = ({ incidents, onBack })
           <div className="bg-cream border border-black/10 rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col p-8 shadow-2xl my-auto text-cream-ink">
             
             <div className="flex items-center justify-between border-b border-black/10 pb-4 mb-4">
-              <div>
-                <h3 className="font-display text-3xl text-cream-ink leading-none">DOCUMENT PREVIEW</h3>
-                <span className="text-xs font-mono font-bold text-cream-ink/60">{reportType} Template • {selectedIds.length} Incidents</span>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
+                >
+                  <ArrowLeft className="w-4 h-4 text-magenta" />
+                  <span>Back to Config</span>
+                </button>
+                <div>
+                  <h3 className="font-display text-2xl text-cream-ink leading-none">DOCUMENT PREVIEW</h3>
+                  <span className="text-[10px] font-mono font-bold text-cream-ink/60">{reportType} Template • {selectedIds.length} Incidents</span>
+                </div>
               </div>
               <button onClick={() => setShowPreview(false)} className="text-cream-ink/60 hover:text-cream-ink font-bold text-xl">
                 ✕

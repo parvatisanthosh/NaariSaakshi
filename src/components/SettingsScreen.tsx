@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe, PhoneCall, ArrowLeft } from 'lucide-react';
+import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe, PhoneCall, ArrowLeft, EyeOff } from 'lucide-react';
 import { AppSettings, Incident } from '../types';
 import { LEGAL_CALL_RECORDING_INFO } from './RecordCallScreen';
 
@@ -158,6 +158,53 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <strong className="font-display text-2xl tracking-wide text-cream-ink block mb-1">HONEST LEGAL NOTE</strong>
           This app helps you document events clearly. It does not replace legal advice. Exported reports are structured drafts for you to review before submitting anywhere.
         </p>
+      </section>
+
+      {/* How Disguise Mode Works Section */}
+      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/40 flex items-center justify-center text-magenta">
+            <EyeOff className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="font-display text-2xl text-cream-ink tracking-wide block">HOW DISGUISE MODE WORKS</span>
+            <span className="text-xs text-cream-ink/70 font-medium">Permanent reference guide for discreet Quick Capture recording</span>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-black/10 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-medium">
+            <div className="bg-cream/40 p-5 rounded-2xl border border-black/10 space-y-2">
+              <span className="font-bold text-magenta text-sm block">1. KEYBOARD & TOUCH EXIT SHORTCUTS</span>
+              <p className="text-cream-ink/90 leading-relaxed">
+                <strong>Hold Escape for 1.5s</strong> OR <strong>press Escape 3x quickly</strong> (or long-press anywhere on touch screens for 2s). Recording immediately stops and saves directly to your Timeline without showing any confirmation popups.
+              </p>
+            </div>
+
+            <div className="bg-cream/40 p-5 rounded-2xl border border-black/10 space-y-2">
+              <span className="font-bold text-magenta text-sm block">2. HARDWARE & TAB AUTO-SAVE</span>
+              <p className="text-cream-ink/90 leading-relaxed">
+                If your device screen locks, phone turns off, or you switch browser tabs/apps during recording, NaariSaakshi automatically stops and saves the recorded video safely.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between pt-2 gap-3">
+            <span className="text-xs text-cream-ink/70 font-medium">
+              Tutorial Overlay Status: {settings.hasSeenDisguiseTutorial ? 'Acknowledged' : 'Pending First Use'}
+            </span>
+
+            <button
+              onClick={() => {
+                onUpdateSettings({ ...settings, hasSeenDisguiseTutorial: false });
+                showNotice('Tutorial overlay reset. It will show next time you open Disguise Screen.');
+              }}
+              className="px-6 py-2.5 border-2 border-magenta/60 text-magenta hover:bg-magenta hover:text-bg-black font-display font-bold text-xs tracking-wider rounded-full transition shadow-sm"
+            >
+              RESET & REVIEW TUTORIAL OVERLAY
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Security: PIN Lock */}

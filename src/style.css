@@ -194,10 +194,13 @@
   color: #E8368F !important;
 }
 .leaflet-container {
-  background-color: #ffffff !important;
+  background-color: #0D0B10 !important;
   font-family: inherit !important;
   border-radius: 16px;
   z-index: 10;
+}
+.map-tiles-dark {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
 }
 .custom-map-pin {
   background: transparent;

@@ -62,6 +62,7 @@ export interface AppSettings {
   localOnlyStorage: boolean;
   theme: 'dark' | 'light' | 'stealth';
   demoMode: boolean;
+  hasSeenDisguiseTutorial?: boolean;
 }
 
 export interface PatternCluster {

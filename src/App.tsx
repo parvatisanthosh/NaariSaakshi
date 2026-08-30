@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldAlert, ArrowRight, X } from 'lucide-react';
+import { ShieldAlert, ArrowRight, X, CheckCircle2 } from 'lucide-react';
 import { ActiveTab, Navigation } from './components/Navigation';
 import { PinLockModal } from './components/PinLockModal';
 import { SosPanelModal } from './components/SosPanelModal';
@@ -31,7 +31,9 @@ export const App: React.FC = () => {
   const [showSosPanel, setShowSosPanel] = useState<boolean>(false);
   const [showChatbot, setShowChatbot] = useState<boolean>(false);
 
-  // Pattern Alert Banner state
+  // Pattern Alert Banner & Toast Notice state
+  const [toastNotice, setToastNotice] = useState<string | null>(null);
+  const toastTimerRef = useRef<any | null>(null);
   const [patternBanner, setPatternBanner] = useState<{
     text: string;
     key: string;
@@ -53,6 +55,44 @@ export const App: React.FC = () => {
     // Scroll window to top whenever active tab or selected incident changes
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [activeTab, selectedIncident]);
+
+  // Browser History & Native Back Button Integration
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state) {
+        if (e.state.selectedIncidentId) {
+          const found = incidents.find(i => i.id === e.state.selectedIncidentId);
+          setSelectedIncident(found || null);
+        } else {
+          setSelectedIncident(null);
+        }
+        if (e.state.activeTab) {
+          setActiveTab(e.state.activeTab);
+        }
+      } else {
+        setSelectedIncident(null);
+        setActiveTab('timeline');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [incidents]);
+
+  const handleSelectIncident = (inc: Incident | null) => {
+    setSelectedIncident(inc);
+    if (inc) {
+      window.history.pushState({ activeTab, selectedIncidentId: inc.id }, '', `#incident-${inc.id}`);
+    } else {
+      window.history.pushState({ activeTab, selectedIncidentId: null }, '', `#${activeTab}`);
+    }
+  };
+
+  const handleTabChange = (tab: ActiveTab) => {
+    setSelectedIncident(null);
+    setActiveTab(tab);
+    window.history.pushState({ activeTab: tab, selectedIncidentId: null }, '', `#${tab}`);
+  };
 
   useEffect(() => {
     // Load initial storage data
@@ -153,11 +193,19 @@ export const App: React.FC = () => {
   }, [settings.pinEnabled, settings.pinCode, isLocked]);
 
   // Save Incident Handler
-  const handleSaveIncident = async (newIncident: Incident) => {
+  const handleSaveIncident = async (savedIncident: Incident) => {
     const previousAnalysis = analyzeIncidentPatterns(incidents);
-    const updatedList = await StorageService.addIncident(newIncident);
+    const exists = incidents.some(i => i.id === savedIncident.id);
+    let updatedList: Incident[];
+    if (exists) {
+      updatedList = await StorageService.updateIncident(savedIncident);
+    } else {
+      updatedList = await StorageService.addIncident(savedIncident);
+    }
     setIncidents(updatedList);
+    setSelectedIncident(null);
     setActiveTab('timeline');
+    triggerToast(exists ? 'Draft completed and saved to Timeline!' : 'New incident logged successfully!');
 
     // Check for newly crossed pattern threshold (count >= 2)
     const newAnalysis = analyzeIncidentPatterns(updatedList);
@@ -181,10 +229,23 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSaveQuickCaptureDraft = async (newDraft: Incident) => {
+  const triggerToast = (msg: string) => {
+    setToastNotice(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToastNotice(null);
+    }, 2500);
+  };
+
+  const handleSaveQuickCaptureDraft = async (newDraft: Incident, toastMessage?: string) => {
     const updatedList = await StorageService.addIncident(newDraft);
     setIncidents(updatedList);
     setActiveTab('timeline');
+    if (toastMessage) {
+      triggerToast(toastMessage);
+    } else {
+      triggerToast('Quick Capture entry saved to timeline.');
+    }
   };
 
   // Update Incident Handler
@@ -249,16 +310,13 @@ export const App: React.FC = () => {
       {/* Top Header Navigation */}
       <Navigation
         activeTab={activeTab}
-        setActiveTab={(tab) => {
-          setSelectedIncident(null);
-          setActiveTab(tab);
-        }}
+        setActiveTab={(tab) => handleTabChange(tab)}
         quickExitEnabled={settings.quickExitEnabled}
         quickExitUrl={settings.quickExitUrl}
         onOpenSos={() => setShowSosPanel(true)}
         onOpenQuickCapture={() => {
-          setSelectedIncident(null);
-          setActiveTab('quick-capture');
+          handleSelectIncident(null);
+          handleTabChange('quick-capture');
         }}
         onOpenChatbot={() => setShowChatbot(true)}
         currentTheme={settings.theme || 'dark'}
@@ -288,6 +346,14 @@ export const App: React.FC = () => {
         onClose={() => setShowChatbot(false)}
         onOpenSos={() => setShowSosPanel(true)}
       />
+
+      {/* Brief Unobtrusive Toast Notice Banner */}
+      {toastNotice && (
+        <div className="fixed bottom-6 right-6 z-50 bg-bg-black border border-magenta text-text-light px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2.5 animate-fade-in text-xs font-semibold">
+          <CheckCircle2 className="w-4 h-4 text-magenta shrink-0" />
+          <span>{toastNotice}</span>
+        </div>
+      )}
 
       {/* Pattern Threshold Crossing Notification Banner */}
       {patternBanner && (
@@ -327,73 +393,87 @@ export const App: React.FC = () => {
       {/* Main Screen Body View - Full Width Layout */}
       <main className="flex-1 w-full mx-auto px-4 sm:px-8 py-6 relative z-10">
         {selectedIncident ? (
-          <IncidentDetailScreen
-            incident={selectedIncident}
-            allIncidents={incidents}
-            onUpdate={handleUpdateIncident}
-            onDelete={handleDeleteIncident}
-            onBack={() => setSelectedIncident(null)}
-          />
+          selectedIncident.isQuickCaptureDraft ? (
+            <LogIncidentScreen
+              draftIncident={selectedIncident}
+              onSaveIncident={handleSaveIncident}
+              onCancel={() => handleSelectIncident(null)}
+            />
+          ) : (
+            <IncidentDetailScreen
+              incident={selectedIncident}
+              allIncidents={incidents}
+              onUpdate={handleUpdateIncident}
+              onDelete={handleDeleteIncident}
+              onBack={() => handleSelectIncident(null)}
+            />
+          )
         ) : (
           <>
             {activeTab === 'timeline' && (
               <TimelineScreen
                 incidents={incidents}
-                onSelectIncident={(inc) => setSelectedIncident(inc)}
-                onLogNew={() => setActiveTab('log')}
-                onRecordCall={() => setActiveTab('record-call')}
-                onViewPatterns={() => setActiveTab('patterns')}
+                onSelectIncident={(inc) => handleSelectIncident(inc)}
+                onLogNew={() => handleTabChange('log')}
+                onRecordCall={() => handleTabChange('record-call')}
+                onViewPatterns={() => handleTabChange('patterns')}
               />
             )}
 
             {activeTab === 'quick-capture' && (
               <QuickCaptureScreen
                 onSaveQuickCapture={handleSaveQuickCaptureDraft}
-                onCancel={() => setActiveTab('timeline')}
+                onCancel={() => handleTabChange('timeline')}
                 trustedContactName={settings.trustedContactName}
                 trustedContactPhone={settings.trustedContactPhone}
+                hasSeenTutorial={settings.hasSeenDisguiseTutorial}
+                onAcknowledgeTutorial={() => {
+                  handleUpdateSettings({ ...settings, hasSeenDisguiseTutorial: true });
+                }}
               />
             )}
 
             {activeTab === 'record-call' && (
               <RecordCallScreen
                 onSaveCallIncident={handleSaveIncident}
-                onCancel={() => setActiveTab('timeline')}
+                onCancel={() => handleTabChange('timeline')}
               />
             )}
 
             {activeTab === 'log' && (
               <LogIncidentScreen
                 onSaveIncident={handleSaveIncident}
-                onCancel={() => setActiveTab('timeline')}
+                onCancel={() => handleTabChange('timeline')}
               />
             )}
 
             {activeTab === 'patterns' && (
               <PatternsScreen
                 incidents={incidents}
-                onSelectIncident={(inc) => setSelectedIncident(inc)}
-                onGenerateReport={() => setActiveTab('report')}
-                onBack={() => setActiveTab('timeline')}
+                onSelectIncident={(inc) => handleSelectIncident(inc)}
+                onGenerateReport={() => handleTabChange('report')}
+                onBack={() => handleTabChange('timeline')}
               />
             )}
 
             {activeTab === 'report' && (
               <ReportScreen
                 incidents={incidents}
-                onBack={() => setActiveTab('timeline')}
+                onBack={() => handleTabChange('timeline')}
+                onOpenRights={() => handleTabChange('rights')}
+                onOpenSos={() => setShowSosPanel(true)}
               />
             )}
 
             {activeTab === 'rights' && (
               <RightsScreen
                 onOpenSos={() => setShowSosPanel(true)}
-                onBack={() => setActiveTab('timeline')}
+                onBack={() => handleTabChange('timeline')}
               />
             )}
 
             {activeTab === 'faq' && (
-              <FAQScreen />
+              <FAQScreen onBack={() => handleTabChange('timeline')} />
             )}
 
             {activeTab === 'settings' && (
@@ -405,7 +485,7 @@ export const App: React.FC = () => {
                 onClearAllData={handleClearAllData}
                 onClearLocationData={handleClearLocationData}
                 onImportData={handleImportData}
-                onBack={() => setActiveTab('timeline')}
+                onBack={() => handleTabChange('timeline')}
               />
             )}
           </>

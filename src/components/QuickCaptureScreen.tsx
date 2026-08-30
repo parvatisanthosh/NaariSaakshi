@@ -1,28 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Video, Square, EyeOff, MapPin, AlertCircle, Shield, FileText, Check, Loader2, ArrowLeft, RefreshCw, Play } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Video, Square, EyeOff, MapPin, AlertCircle, Shield, FileText, Check, Loader2, ArrowLeft, RefreshCw, Play, ChevronLeft, Share2, MoreHorizontal, CheckSquare, Info } from 'lucide-react';
 import { Incident, Attachment } from '../types';
 
 interface QuickCaptureScreenProps {
-  onSaveQuickCapture: (newDraft: Incident) => void;
+  onSaveQuickCapture: (newDraft: Incident, toastMessage?: string) => void;
   onCancel: () => void;
   trustedContactName?: string;
   trustedContactPhone?: string;
+  hasSeenTutorial?: boolean;
+  onAcknowledgeTutorial?: () => void;
 }
 
 export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
   onSaveQuickCapture,
   onCancel,
   trustedContactName,
-  trustedContactPhone
+  trustedContactPhone,
+  hasSeenTutorial,
+  onAcknowledgeTutorial
 }) => {
   const [step, setStep] = useState<'recording' | 'preview'>('recording');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isDisguised, setIsDisguised] = useState(false);
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
   const [shareLocationOptIn, setShareLocationOptIn] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+
+  // Keyboard Escape exit state & hold progress
+  const [escHoldProgress, setEscHoldProgress] = useState(0);
+  const escTimerRef = useRef<any>(null);
+  const escIntervalRef = useRef<any>(null);
+  const isEscHoldingRef = useRef(false);
+  const escPressesRef = useRef<number[]>([]);
+
+  // Long-press exit gesture state (touch/mouse fallback)
+  const [longPressProgress, setLongPressProgress] = useState(0);
+  const longPressTimerRef = useRef<any>(null);
+  const progressIntervalRef = useRef<any>(null);
+  const isDirectExitRunningRef = useRef(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -48,8 +67,136 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
     return () => {
       cleanupStream();
       if (timerRef.current) clearInterval(timerRef.current);
+      cancelLongPress();
+      cancelEscTimer();
     };
   }, []);
+
+  // Hardware / Browser level interrupt detection (tab switch, screen lock, window blur, beforeunload)
+  useEffect(() => {
+    const handleInterrupt = () => {
+      if (document.visibilityState === 'hidden' && step === 'recording') {
+        handleDirectSaveAndExit('Auto-saved recording on tab switch / screen lock');
+      }
+    };
+
+    const handleBlur = () => {
+      if (step === 'recording') {
+        handleDirectSaveAndExit('Auto-saved recording on background focus loss');
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (step === 'recording') {
+        handleDirectSaveAndExit('Auto-saved recording before window close');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleInterrupt);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleInterrupt);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [step, coords]);
+
+  // Keyboard Escape exit listener (1.5s Hold OR 3x Quick Press)
+  useEffect(() => {
+    if (!isDisguised) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+
+        // Check 3x quick Escape press shortcut
+        const now = Date.now();
+        escPressesRef.current = [...escPressesRef.current.filter(t => now - t < 2000), now];
+        if (escPressesRef.current.length >= 3) {
+          cancelEscTimer();
+          handleDirectSaveAndExit('Discreet recording saved via 3x Escape shortcut');
+          return;
+        }
+
+        // Start 1.5s hold timer if not already holding
+        if (!isEscHoldingRef.current) {
+          isEscHoldingRef.current = true;
+          const startTime = Date.now();
+          const DURATION = 1500; // 1.5 seconds
+
+          setEscHoldProgress(0);
+          if (escIntervalRef.current) clearInterval(escIntervalRef.current);
+
+          escIntervalRef.current = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const pct = Math.min((elapsed / DURATION) * 100, 100);
+            setEscHoldProgress(pct);
+          }, 30);
+
+          escTimerRef.current = setTimeout(() => {
+            cancelEscTimer();
+            handleDirectSaveAndExit('Discreet recording saved to Timeline');
+          }, DURATION);
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        cancelEscTimer();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      cancelEscTimer();
+    };
+  }, [isDisguised, coords]);
+
+  const cancelEscTimer = () => {
+    isEscHoldingRef.current = false;
+    if (escTimerRef.current) {
+      clearTimeout(escTimerRef.current);
+      escTimerRef.current = null;
+    }
+    if (escIntervalRef.current) {
+      clearInterval(escIntervalRef.current);
+      escIntervalRef.current = null;
+    }
+    setEscHoldProgress(0);
+  };
+
+  // Status Bar & Document Title concealment when disguise mode is active
+  useEffect(() => {
+    if (isDisguised) {
+      const originalTitle = document.title;
+      document.title = 'Notes';
+
+      let metaTheme = document.querySelector('meta[name="theme-color"]');
+      let originalThemeColor = metaTheme?.getAttribute('content');
+      if (metaTheme) {
+        metaTheme.setAttribute('content', '#F2F2F7');
+      } else {
+        metaTheme = document.createElement('meta');
+        metaTheme.setAttribute('name', 'theme-color');
+        metaTheme.setAttribute('content', '#F2F2F7');
+        document.head.appendChild(metaTheme);
+      }
+
+      return () => {
+        document.title = originalTitle || 'NaariSaakshi — Private Incident Journal';
+        if (metaTheme) {
+          metaTheme.setAttribute('content', originalThemeColor || '#0B090E');
+        }
+      };
+    }
+  }, [isDisguised]);
 
   const cleanupStream = () => {
     if (mediaStreamRef.current) {
@@ -66,13 +213,14 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
       setElapsedSeconds(0);
       setRecordedVideoUrl(null);
       setRecordedBlob(null);
+      isDirectExitRunningRef.current = false;
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera/Microphone API not supported on this device');
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: true
       });
 
@@ -102,6 +250,132 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
     } catch (err) {
       console.warn('Quick Capture start error:', err);
       setCameraError('Camera/Microphone permission required for Quick Capture. You can upload files manually.');
+    }
+  };
+
+  // Trigger Disguise mode with check for tutorial
+  const handleOpenDisguise = () => {
+    if (!hasSeenTutorial) {
+      setShowTutorialModal(true);
+    } else {
+      setIsDisguised(true);
+    }
+  };
+
+  const handleConfirmTutorialAndStart = () => {
+    if (onAcknowledgeTutorial) {
+      onAcknowledgeTutorial();
+    }
+    setShowTutorialModal(false);
+    setIsDisguised(true);
+  };
+
+  // Long Press Exit Gesture logic (2-3 seconds long press)
+  const startLongPress = (e: React.TouchEvent | React.MouseEvent) => {
+    cancelLongPress();
+
+    const startTime = Date.now();
+    const DURATION = 2000; // 2 seconds
+
+    setLongPressProgress(0);
+
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / DURATION) * 100, 100);
+      setLongPressProgress(progress);
+    }, 40);
+
+    longPressTimerRef.current = setTimeout(() => {
+      cancelLongPress();
+      setLongPressProgress(100);
+      handleDirectSaveAndExit('Discreet recording saved to Timeline');
+    }, DURATION);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setLongPressProgress(0);
+  };
+
+  // Direct save and exit without confirmation dialog
+  const handleDirectSaveAndExit = (toastMsg = 'Quick Capture recording saved to Timeline') => {
+    if (isDirectExitRunningRef.current) return;
+    isDirectExitRunningRef.current = true;
+
+    if (timerRef.current) clearInterval(timerRef.current);
+    cancelLongPress();
+
+    const finishAndSave = () => {
+      cleanupStream();
+      const blob = new Blob(videoChunksRef.current, { type: 'video/webm' });
+      console.log('[QuickCapture] MediaRecorder stopped. Total Blob size:', blob.size, 'bytes');
+
+      const createDraft = (dataUrl?: string) => {
+        console.log('[QuickCapture] Base64 dataUrl generated. Length:', dataUrl ? dataUrl.length : 0, 'chars');
+        const videoAttachment: Attachment = {
+          id: 'att-qc-' + Math.random().toString(36).substr(2, 6),
+          name: `Discreet_Capture_${new Date().toISOString().slice(0, 10)}.webm`,
+          type: 'video',
+          dataUrl,
+          size: blob.size,
+          uploadedAt: new Date().toISOString(),
+          isLiveCapture: true,
+          captureMethod: 'camera'
+        };
+
+        const nowIso = new Date().toISOString();
+        const newDraft: Incident = {
+          id: 'inc-qc-' + Math.random().toString(36).substr(2, 8),
+          created_at: nowIso,
+          incident_datetime: nowIso,
+          location: coords ? `GPS (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})` : 'Quick Capture Location',
+          latitude: coords?.lat,
+          longitude: coords?.lng,
+          people_involved: [],
+          category: 'Other',
+          narrative_raw: 'Discreet video recording captured in-the-moment.',
+          narrative_structured: {
+            summary: 'Discreet Quick Capture — saved automatically',
+            context: 'Recorded live in-the-moment using disguise mode.',
+            keyActions: ['Live video/audio evidence recorded discreetly.'],
+            impactDescription: 'Evidence preserved safely to local storage.',
+            recommendedFollowUp: 'Open when safe to complete narrative details, people involved, and review.'
+          },
+          witnesses: [],
+          attachments: dataUrl ? [videoAttachment] : [],
+          user_edited: false,
+          tags: ['Quick Capture', 'Discreet'],
+          isQuickCaptureDraft: true
+        };
+
+        onSaveQuickCapture(newDraft, toastMsg);
+      };
+
+      if (blob.size > 0) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          createDraft(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        createDraft(undefined);
+      }
+    };
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.onstop = () => {
+        finishAndSave();
+      };
+      mediaRecorderRef.current.stop();
+    } else {
+      finishAndSave();
     }
   };
 
@@ -186,7 +460,7 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
     };
 
     setIsSaving(false);
-    onSaveQuickCapture(newDraft);
+    onSaveQuickCapture(newDraft, 'Quick Capture recording saved to Timeline');
   };
 
   const formatTimer = (secs: number) => {
@@ -213,53 +487,151 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
     );
   }
 
-  // Disguise Screen View (Fake Plain Notes UI)
+  // Realistic System Notes App Disguise Screen (Mundane To-Do / Grocery List) mounted via Portal directly to document.body
   if (isDisguised) {
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900 text-slate-100 flex flex-col p-4 space-y-4 font-sans select-none">
-        <div className="flex items-center justify-between border-b border-slate-700 pb-3">
-          <div className="flex items-center space-x-2">
-            <FileText className="w-4 h-4 text-slate-400" />
-            <span className="text-sm font-semibold text-slate-200">Notes — Project Standup</span>
+    const currentProgress = Math.max(escHoldProgress, longPressProgress);
+
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[999999] w-screen h-screen bg-[#F2F2F7] text-[#1C1C1E] flex flex-col font-sans select-none overflow-hidden touch-none"
+        onMouseDown={startLongPress}
+        onMouseUp={cancelLongPress}
+        onMouseLeave={cancelLongPress}
+        onTouchStart={startLongPress}
+        onTouchEnd={cancelLongPress}
+        onTouchCancel={cancelLongPress}
+      >
+        {/* Subtle top progress bar during Escape hold or touch hold gesture */}
+        {currentProgress > 0 && (
+          <div className="w-full bg-[#E5E5EA] h-1.5 fixed top-0 left-0 right-0 z-[1000000] overflow-hidden">
+            <div
+              className="bg-[#007AFF] h-full transition-all duration-75 ease-out"
+              style={{ width: `${currentProgress}%` }}
+            />
           </div>
-          <button
-            onClick={handleStopRecordingToPreview}
-            className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-600 transition"
-          >
-            Done
+        )}
+
+        {/* Realistic OS Notes Top Header Bar */}
+        <div className="bg-[#F2F2F7]/90 backdrop-blur-md px-4 py-3 border-b border-[#C6C6C8]/60 flex items-center justify-between pt-6">
+          <button className="flex items-center space-x-1 text-[#D98A2B] hover:opacity-80 active:opacity-60 text-sm font-medium">
+            <ChevronLeft className="w-5 h-5 text-[#D98A2B]" />
+            <span>Notes</span>
           </button>
+
+          <div className="flex items-center space-x-5 text-[#D98A2B]">
+            <Share2 className="w-4 h-4 text-[#D98A2B]" />
+            <MoreHorizontal className="w-5 h-5 text-[#D98A2B]" />
+          </div>
         </div>
 
-        <div className="flex-1 space-y-3 text-xs text-slate-400 font-mono pt-2">
-          <p>• Reviewed sprint task board and open backlog items.</p>
-          <p>• Action items assigned for Q3 documentation update.</p>
-          <p>• Follow up with engineering team on API schema changes.</p>
-          <p>• Next sync scheduled for Tuesday 10:00 AM.</p>
+        {/* Realistic Note Document Content */}
+        <div className="flex-1 px-6 py-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full text-slate-800 font-sans">
+          <div>
+            <h1 className="text-2xl font-bold text-[#1C1C1E] tracking-tight">Grocery & Daily To-Do</h1>
+            <p className="text-[12px] text-[#8E8E93] mt-1 font-normal">Yesterday at 4:15 PM</p>
+          </div>
+
+          <div className="space-y-3 text-sm text-[#2C2C2E] leading-relaxed pt-2">
+            <div className="flex items-center space-x-3">
+              <CheckSquare className="w-4 h-4 text-[#8E8E93] shrink-0" />
+              <span>Dry cleaning pickup (4th Street location)</span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <CheckSquare className="w-4 h-4 text-[#8E8E93] shrink-0" />
+              <span>Pay electricity & Wi-Fi bills before Friday</span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <CheckSquare className="w-4 h-4 text-[#8E8E93] shrink-0" />
+              <span>Call mom regarding Sunday family lunch</span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <CheckSquare className="w-4 h-4 text-[#8E8E93] shrink-0" />
+              <span>Buy almond milk, eggs, sourdough bread, fresh apples</span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <CheckSquare className="w-4 h-4 text-[#8E8E93] shrink-0" />
+              <span>Water balcony plants in the evening</span>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <CheckSquare className="w-4 h-4 text-[#8E8E93] shrink-0" />
+              <span>Return library books</span>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-[#E5E5EA] space-y-2 text-xs text-[#6C6C70]">
+            <p className="font-semibold text-[#3A3A3C]">Additional Reminders:</p>
+            <p>• Check mailbox before heading upstairs.</p>
+            <p>• Confirm plumber appointment for Thursday morning.</p>
+          </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Recording active in background</span>
-          <button
-            onClick={() => setIsDisguised(false)}
-            className="text-slate-400 hover:text-slate-200 underline"
-          >
-            Show Viewfinder
-          </button>
+        {/* Minimal Bottom Status Bar */}
+        <div className="px-6 py-3 border-t border-[#C6C6C8]/60 bg-[#F2F2F7] flex items-center justify-between text-[11px] text-[#8E8E93] font-sans">
+          <span>6 Items</span>
+          <span className="text-[10px] opacity-60">Hold Escape 1.5s or press Esc 3x to exit</span>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6 pb-28 space-y-5">
       
+      {/* Tutorial Modal Overlay for First Time Disguise Mode */}
+      {showTutorialModal && (
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-md p-8 space-y-6 shadow-2xl text-cream-ink">
+            <div className="flex items-center space-x-3 text-magenta">
+              <div className="w-10 h-10 rounded-2xl bg-magenta text-bg-black font-bold flex items-center justify-center shadow-md">
+                <Shield className="w-5 h-5 text-bg-black" />
+              </div>
+              <h3 className="font-display text-2xl text-cream-ink leading-tight">DISGUISE MODE EXIT GESTURE</h3>
+            </div>
+
+            <div className="space-y-3 text-xs sm:text-sm text-cream-ink/90 font-medium leading-relaxed bg-cream/40 p-4 rounded-2xl border border-black/10">
+              <p className="font-bold text-magenta text-sm">
+                How to stop recording and exit disguise mode:
+              </p>
+              <p className="text-cream-ink">
+                • <strong>Hold the Escape key for 1.5 seconds</strong>, OR
+              </p>
+              <p className="text-cream-ink">
+                • <strong>Press Escape 3 times quickly</strong>, OR
+              </p>
+              <p className="text-cream-ink">
+                • <em>Touch / mouse:</em> Hold down anywhere on screen for 2 seconds.
+              </p>
+              <p className="text-xs text-cream-ink/80 border-t border-black/10 pt-2">
+                Recording will immediately stop, save to your Timeline, and return to the main app without any confirmation popups.
+              </p>
+              <p className="text-xs text-cream-ink/80">
+                • <em>Safety net:</em> Switching tabs, locking screen, or closing window also auto-saves immediately.
+              </p>
+            </div>
+
+            <button
+              onClick={handleConfirmTutorialAndStart}
+              className="w-full py-4 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-lg"
+            >
+              I UNDERSTAND — ENTER DISGUISE
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Back Navigation Button */}
       <div className="flex items-center justify-between">
         <button
           onClick={onCancel}
-          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+          className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 text-magenta" />
           <span>Back to Timeline</span>
         </button>
       </div>
@@ -298,8 +670,8 @@ export const QuickCaptureScreen: React.FC<QuickCaptureScreenProps> = ({
 
             {/* Disguise Toggle Button */}
             <button
-              onClick={() => setIsDisguised(true)}
-              className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-charcoal-900/90 hover:bg-charcoal-800 border border-charcoal-700 text-[11px] text-charcoal-300 flex items-center space-x-1 transition"
+              onClick={handleOpenDisguise}
+              className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-charcoal-900/90 hover:bg-charcoal-800 border border-charcoal-700 text-[11px] text-charcoal-300 flex items-center space-x-1 transition shadow-md"
             >
               <EyeOff className="w-3.5 h-3.5 text-teal-400" />
               <span>Disguise Screen</span>

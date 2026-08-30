@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, Calendar, MapPin, User, Users, Tag, Trash2, Edit3, Save, X, Paperclip, AlertOctagon, Check, Mic, Camera, Plus, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, User, Users, Tag, Trash2, Edit3, Save, X, Paperclip, AlertOctagon, Check, Mic, Camera, Plus, Clock, Video } from 'lucide-react';
 import { CategoryType, Incident, Attachment } from '../types';
 import { StorageService } from '../storageService';
 import { CameraCaptureModal } from './CameraCaptureModal';
@@ -140,10 +140,10 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
       <div className="flex items-center justify-between border-b border-black/10 pb-4">
         <button
           onClick={onBack}
-          className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-cream-ink hover:text-magenta transition"
+          className="flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Timeline</span>
+          <ArrowLeft className="w-4 h-4 text-magenta" />
+          <span>Back</span>
         </button>
 
         <div className="flex items-center space-x-3">
@@ -330,7 +330,9 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
                     <div key={att.id} className="bg-white p-5 rounded-2xl border border-black/10 space-y-3 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3 text-xs">
-                          {att.type === 'audio' ? (
+                          {att.type === 'video' ? (
+                            <Video className="w-5 h-5 text-magenta shrink-0" />
+                          ) : att.type === 'audio' ? (
                             <Mic className="w-5 h-5 text-magenta shrink-0" />
                           ) : att.isLiveCapture || att.captureMethod === 'camera' ? (
                             <Camera className="w-5 h-5 text-magenta shrink-0" />
@@ -339,9 +341,13 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
                           )}
                           <div className="truncate">
                             <span className="text-cream-ink font-bold text-sm block truncate">{att.name}</span>
-                            {att.isLiveCapture && (
+                            {att.type === 'video' ? (
+                              <span className="text-[10px] text-magenta font-bold uppercase tracking-wider">📹 Live Video Recording</span>
+                            ) : att.type === 'audio' ? (
+                              <span className="text-[10px] text-magenta font-bold uppercase tracking-wider">🎙️ Audio Recording</span>
+                            ) : att.isLiveCapture ? (
                               <span className="text-[10px] text-magenta font-bold uppercase tracking-wider">📷 Live Watermarked Photo</span>
-                            )}
+                            ) : null}
                           </div>
                         </div>
 
@@ -352,6 +358,18 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
                           <X className="w-5 h-5" />
                         </button>
                       </div>
+
+                      {att.type === 'video' && att.dataUrl && (
+                        <div className="mt-2 max-w-lg rounded-2xl overflow-hidden border border-black/10 shadow-sm bg-black">
+                          <video src={att.dataUrl} controls className="w-full h-auto max-h-72 object-contain" />
+                        </div>
+                      )}
+
+                      {att.type === 'audio' && att.dataUrl && (
+                        <div className="mt-2 p-3 bg-cream/40 rounded-2xl border border-black/10">
+                          <audio src={att.dataUrl} controls className="w-full" />
+                        </div>
+                      )}
 
                       {att.type === 'image' && att.dataUrl && (
                         <div className="mt-2 max-w-md rounded-2xl overflow-hidden border border-black/10 shadow-sm">

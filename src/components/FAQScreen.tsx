@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { HelpCircle, ChevronDown, ChevronUp, ShieldCheck, Lock, FileText, Smartphone, Globe, Sparkles } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, ShieldCheck, Lock, FileText, Smartphone, Globe, Sparkles, ArrowLeft } from 'lucide-react';
 
 interface FAQItem {
   question: string;
   answer: string;
   category: string;
+}
+
+interface FAQScreenProps {
+  onBack?: () => void;
 }
 
 const FAQS: FAQItem[] = [
@@ -50,7 +54,7 @@ const FAQS: FAQItem[] = [
   }
 ];
 
-export const FAQScreen: React.FC = () => {
+export const FAQScreen: React.FC<FAQScreenProps> = ({ onBack }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
@@ -62,6 +66,19 @@ export const FAQScreen: React.FC = () => {
 
   return (
     <div className="w-full space-y-10 pb-28 relative">
+      
+      {/* Top Back Navigation Button */}
+      {onBack && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
+          >
+            <ArrowLeft className="w-4 h-4 text-magenta" />
+            <span>Back to Timeline</span>
+          </button>
+        </div>
+      )}
       
       {/* SECTION 1: TOP BANNER (Cream Contrast Background) */}
       <section className="rounded-3xl bg-cream text-cream-ink p-8 sm:p-14 shadow-2xl border border-black/10 relative z-10 w-full space-y-4">

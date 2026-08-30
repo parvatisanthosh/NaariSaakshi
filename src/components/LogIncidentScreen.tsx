@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Type, Sparkles, Paperclip, CheckCircle2, AlertCircle, Edit3, X, Trash2, ArrowRight, Check, Loader2, MapPin, Camera, Info, HardDrive, ArrowLeft } from 'lucide-react';
+import { Mic, MicOff, Type, Sparkles, Paperclip, CheckCircle2, AlertCircle, Edit3, X, Trash2, ArrowRight, Check, Loader2, MapPin, Camera, Info, HardDrive, ArrowLeft, Video } from 'lucide-react';
 import { Attachment, CategoryType, Incident, PersonInvolved } from '../types';
 import { extractIncidentFromRawText } from '../aiEngine';
 import { CameraCaptureModal } from './CameraCaptureModal';
@@ -9,11 +9,12 @@ import { contributeAnonymousSignal } from '../firebaseService';
 interface LogIncidentScreenProps {
   onSaveIncident: (incident: Incident) => void;
   onCancel: () => void;
+  draftIncident?: Incident | null;
 }
 
-export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveIncident, onCancel }) => {
+export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveIncident, onCancel, draftIncident }) => {
   const [mode, setMode] = useState<'text' | 'voice'>('voice');
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState(draftIncident?.narrative_raw || '');
   
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -26,7 +27,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Attachment state
-  const [attachmentsList, setAttachmentsList] = useState<Attachment[]>([]);
+  const [attachmentsList, setAttachmentsList] = useState<Attachment[]>(draftIncident?.attachments || []);
   const [voiceAudioAttachment, setVoiceAudioAttachment] = useState<Attachment | null>(null);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showMicExplainerModal, setShowMicExplainerModal] = useState(false);
@@ -35,9 +36,10 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
   const storageInfo = StorageService.getStorageUsageInfo();
 
-  // Extracted Data for Confirmation Modal
+  // Extracted Data & Unsaved Input Modal
   const [extractedData, setExtractedData] = useState<any | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState('Reading through what you shared...');
 
@@ -53,8 +55,12 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
   const [editSeverity, setEditSeverity] = useState<number>(3);
 
   // Location capture state
-  const [locationOptIn, setLocationOptIn] = useState(false);
-  const [capturedCoords, setCapturedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationOptIn, setLocationOptIn] = useState(draftIncident?.latitude !== undefined && draftIncident?.longitude !== undefined);
+  const [capturedCoords, setCapturedCoords] = useState<{ lat: number; lng: number } | null>(
+    draftIncident?.latitude !== undefined && draftIncident?.longitude !== undefined
+      ? { lat: draftIncident.latitude, lng: draftIncident.longitude }
+      : null
+  );
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isLocationDetected, setIsLocationDetected] = useState(false);
@@ -353,12 +359,12 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
     const isUserModified = Object.keys(touchedFields).length > 0;
 
     const newIncident: Incident = {
-      id: 'inc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-      created_at: new Date().toISOString(),
-      incident_datetime: editDatetime ? new Date(editDatetime).toISOString() : new Date().toISOString(),
-      location: editLocation.trim() || 'Unspecified location',
-      latitude: capturedCoords ? capturedCoords.lat : undefined,
-      longitude: capturedCoords ? capturedCoords.lng : undefined,
+      id: draftIncident ? draftIncident.id : ('inc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+      created_at: draftIncident ? draftIncident.created_at : new Date().toISOString(),
+      incident_datetime: editDatetime ? new Date(editDatetime).toISOString() : (draftIncident ? draftIncident.incident_datetime : new Date().toISOString()),
+      location: editLocation.trim() || (draftIncident ? draftIncident.location : 'Unspecified location'),
+      latitude: capturedCoords ? capturedCoords.lat : draftIncident?.latitude,
+      longitude: capturedCoords ? capturedCoords.lng : draftIncident?.longitude,
       category: editCategory,
       people_involved: finalPeople,
       witnesses: finalWitnesses,
@@ -369,10 +375,11 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         keyActions: editActions.length > 0 ? editActions : [inputText],
         impactDescription: 'Not specified'
       },
-      tags: [],
+      tags: draftIncident ? (draftIncident.tags || []).filter(t => t !== 'Quick Capture') : [],
       severity: editSeverity,
       attachments: finalAttachments,
-      user_edited: isUserModified
+      user_edited: isUserModified,
+      isQuickCaptureDraft: false
     };
 
     if (contributeSignalOptIn && capturedCoords) {
@@ -380,6 +387,40 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
     }
 
     onSaveIncident(newIncident);
+  };
+
+  const handleBackClick = () => {
+    if (inputText.trim().length > 0 || voiceAudioAttachment) {
+      setShowUnsavedModal(true);
+    } else {
+      onCancel();
+    }
+  };
+
+  const handleSaveDraftAndLeave = () => {
+    const draft: Incident = {
+      id: draftIncident ? draftIncident.id : ('inc-qc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+      created_at: draftIncident ? draftIncident.created_at : new Date().toISOString(),
+      incident_datetime: draftIncident ? draftIncident.incident_datetime : new Date().toISOString(),
+      location: editLocation || draftIncident?.location || 'Quick Capture Location',
+      latitude: capturedCoords ? capturedCoords.lat : draftIncident?.latitude,
+      longitude: capturedCoords ? capturedCoords.lng : draftIncident?.longitude,
+      category: editCategory || 'Other',
+      people_involved: [],
+      witnesses: [],
+      narrative_raw: inputText,
+      narrative_structured: {
+        summary: inputText.slice(0, 60) + (inputText.length > 60 ? '...' : ''),
+        context: 'Draft notes in progress',
+        keyActions: [inputText],
+        impactDescription: 'Draft'
+      },
+      tags: ['Quick Capture'],
+      attachments: attachmentsList,
+      user_edited: false,
+      isQuickCaptureDraft: true
+    };
+    onSaveIncident(draft);
   };
 
   const renderFieldBadge = (fieldName: string) => {
@@ -454,13 +495,52 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
         </div>
       )}
 
+      {/* Unsaved Notes Protection Warning Modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-md p-8 space-y-6 shadow-2xl text-cream-ink">
+            <div className="flex items-center space-x-3 text-magenta">
+              <AlertCircle className="w-7 h-7 text-magenta shrink-0" />
+              <h3 className="font-display text-3xl text-cream-ink leading-none">UNSAVED LOGGING NOTES</h3>
+            </div>
+            
+            <p className="text-sm text-cream-ink/80 leading-relaxed font-medium">
+              You have entered notes that haven't been saved yet. What would you like to do before returning to Timeline?
+            </p>
+
+            <div className="flex flex-col space-y-3 pt-2">
+              <button
+                onClick={handleSaveDraftAndLeave}
+                className="w-full py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-md"
+              >
+                SAVE AS DRAFT & RETURN
+              </button>
+
+              <button
+                onClick={onCancel}
+                className="w-full py-3 rounded-full border border-rose-500/40 text-rose-700 hover:bg-rose-50 font-bold text-xs uppercase tracking-wider transition"
+              >
+                DISCARD & LEAVE
+              </button>
+
+              <button
+                onClick={() => setShowUnsavedModal(false)}
+                className="w-full py-3 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
+              >
+                CONTINUE EDITING
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Back Navigation Button */}
       <div className="flex items-center justify-between">
         <button
-          onClick={onCancel}
+          onClick={handleBackClick}
           className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 text-magenta" />
           <span>Back to Timeline</span>
         </button>
       </div>
@@ -472,17 +552,68 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
             <Sparkles className="w-6 h-6 text-bg-black" />
           </div>
           <div>
-            <span className="text-xs font-mono font-bold tracking-widest text-magenta uppercase block">VOICE & TEXT JOURNALING</span>
+            <span className="text-xs font-mono font-bold tracking-widest text-magenta uppercase block">
+              {draftIncident ? 'QUICK CAPTURE DRAFT COMPLETION' : 'VOICE & TEXT JOURNALING'}
+            </span>
             <h1 className="font-display text-4xl sm:text-6xl tracking-wide text-text-light leading-none">
-              LOG AN INCIDENT
+              {draftIncident ? 'COMPLETE DRAFT ENTRY' : 'LOG AN INCIDENT'}
             </h1>
           </div>
         </div>
 
         <p className="text-sm sm:text-base text-text-muted leading-relaxed font-medium max-w-4xl">
-          "Just say or type what happened in your own words. We'll quietly organize it into a structured, timestamped record for you."
+          {draftIncident
+            ? 'Add narrative details about what happened during this Quick Capture recording. Say or type what happened below.'
+            : '"Just say or type what happened in your own words. We\'ll quietly organize it into a structured, timestamped record for you."'}
         </p>
       </section>
+
+      {/* Quick Capture Media Evidence Player Banner */}
+      {draftIncident && (
+        <div className="bg-bg-black border border-magenta/40 rounded-3xl p-6 space-y-4 shadow-xl relative z-10">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center space-x-2 text-magenta font-display text-xl tracking-wide uppercase">
+              <Video className="w-5 h-5 text-magenta" />
+              <span>QUICK CAPTURE MEDIA EVIDENCE</span>
+            </div>
+            <span className="text-[10px] font-bold text-amber-300 bg-amber-950 px-3 py-1 rounded-full border border-amber-700/80">
+              Draft #{draftIncident.id.slice(-6)}
+            </span>
+          </div>
+
+          {(() => {
+            const mediaAtt = (draftIncident.attachments || []).find(a => a.type === 'video' || a.type === 'audio');
+            if (mediaAtt && mediaAtt.dataUrl) {
+              return (
+                <div className="space-y-3">
+                  {mediaAtt.type === 'video' ? (
+                    <div className="rounded-2xl overflow-hidden bg-black border border-white/10 max-h-72 flex items-center justify-center shadow-md">
+                      <video src={mediaAtt.dataUrl} controls className="w-full h-auto max-h-72 object-contain" />
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-black/40 rounded-2xl border border-white/10">
+                      <audio src={mediaAtt.dataUrl} controls className="w-full" />
+                    </div>
+                  )}
+                  <p className="text-xs text-text-muted font-medium">
+                    📹 Review your captured media above. Use the voice or typing options below to add details about what happened.
+                  </p>
+                </div>
+              );
+            } else {
+              return (
+                <div className="bg-amber-950/80 border border-amber-500/50 rounded-2xl p-4 flex items-center space-x-3 text-amber-200 text-xs font-medium">
+                  <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <span className="font-bold block text-amber-100">Recording unavailable</span>
+                    <span className="text-[11px] opacity-90">Original capture media could not be loaded, but you can still add narrative details below and complete logging this entry.</span>
+                  </div>
+                </div>
+              );
+            }
+          })()}
+        </div>
+      )}
 
       {/* Mode Switcher Buttons */}
       <div className="flex p-1.5 bg-white/5 rounded-full border border-white/10 shadow-sm">
@@ -673,16 +804,24 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
           {attachmentsList.map((att) => (
             <div key={att.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 text-xs">
               <div className="flex items-center space-x-3 truncate pr-2">
-                {att.isLiveCapture ? (
+                {att.type === 'video' ? (
+                  <Video className="w-5 h-5 text-magenta shrink-0" />
+                ) : att.type === 'audio' ? (
+                  <Mic className="w-5 h-5 text-magenta shrink-0" />
+                ) : att.isLiveCapture || att.captureMethod === 'camera' ? (
                   <Camera className="w-5 h-5 text-magenta shrink-0" />
                 ) : (
                   <Paperclip className="w-5 h-5 text-text-muted shrink-0" />
                 )}
                 <div className="truncate">
                   <span className="text-text-light font-bold text-sm block truncate">{att.name}</span>
-                  {att.isLiveCapture && (
+                  {att.type === 'video' ? (
+                    <span className="text-[10px] text-magenta font-mono font-semibold">📹 Live Video Recording</span>
+                  ) : att.type === 'audio' ? (
+                    <span className="text-[10px] text-magenta font-mono font-semibold">🎙️ Audio Recording</span>
+                  ) : att.isLiveCapture ? (
                     <span className="text-[10px] text-magenta font-mono font-semibold">📷 Live Watermarked Photo</span>
-                  )}
+                  ) : null}
                 </div>
               </div>
               <button
@@ -751,10 +890,11 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
 
       {/* MANDATORY REVIEW & EDIT MODAL (Trust Requirement) - High Contrast Cream Theme */}
       {showReviewModal && (
-        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-8 space-y-6 shadow-2xl my-auto text-cream-ink">
+        <div className="fixed inset-0 z-50 bg-bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+          <div className="bg-white border border-black/10 rounded-3xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl my-auto text-cream-ink overflow-hidden relative">
             
-            <div className="flex items-start justify-between border-b border-black/10 pb-4">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-black/10 p-6 pb-4 bg-white shrink-0">
               <div>
                 <div className="flex items-center space-x-2 text-magenta font-display text-lg tracking-wider uppercase">
                   <CheckCircle2 className="w-5 h-5" />
@@ -766,12 +906,13 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                   Review what I found — everything here is editable before you save.
                 </p>
               </div>
-              <button onClick={() => setShowReviewModal(false)} className="text-cream-ink/60 hover:text-cream-ink font-bold text-xl">
+              <button onClick={() => setShowReviewModal(false)} className="text-cream-ink/60 hover:text-cream-ink font-bold text-xl p-1">
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs font-medium">
+            {/* Scrollable Fields Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs font-medium">
 
               {/* Date & Time */}
               <div className="space-y-1.5">
@@ -982,19 +1123,108 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                 </div>
               </div>
 
+              {/* Attached Evidence Review Section */}
+              {(attachmentsList.length > 0 || voiceAudioAttachment) && (
+                <div className="space-y-2 pt-2 border-t border-black/10">
+                  <div className="flex items-center justify-between">
+                    <label className="text-cream-ink font-bold uppercase tracking-wider flex items-center space-x-1.5">
+                      <Paperclip className="w-4 h-4 text-magenta" />
+                      <span>Attached Evidence ({attachmentsList.length + (voiceAudioAttachment ? 1 : 0)})</span>
+                    </label>
+                    <span className="text-[10px] text-cream-ink/60 font-semibold uppercase">Preserved for log</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {voiceAudioAttachment && (
+                      <div className="bg-cream/60 border border-black/10 rounded-2xl p-3 space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-magenta flex items-center space-x-1">
+                            <Mic className="w-3.5 h-3.5 text-magenta inline mr-1" />
+                            <span>🎙️ Voice Recording Evidence</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setVoiceAudioAttachment(null)}
+                            className="text-cream-ink/60 hover:text-magenta font-bold text-xs"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        {voiceAudioAttachment.dataUrl && (
+                          <audio controls src={voiceAudioAttachment.dataUrl} className="w-full h-8 mt-1 rounded-lg" />
+                        )}
+                      </div>
+                    )}
+
+                    {attachmentsList.map((att) => (
+                      <div key={att.id} className="bg-cream/60 border border-black/10 rounded-2xl p-3 space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 truncate">
+                            {att.type === 'video' ? (
+                              <Video className="w-4 h-4 text-magenta shrink-0" />
+                            ) : att.type === 'audio' ? (
+                              <Mic className="w-4 h-4 text-magenta shrink-0" />
+                            ) : att.isLiveCapture || att.captureMethod === 'camera' ? (
+                              <Camera className="w-4 h-4 text-magenta shrink-0" />
+                            ) : (
+                              <Paperclip className="w-4 h-4 text-cream-ink/60 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <span className="font-bold text-cream-ink block truncate">{att.name}</span>
+                              {att.type === 'video' ? (
+                                <span className="text-[10px] text-magenta font-mono font-semibold">📹 Live Video Recording</span>
+                              ) : att.type === 'audio' ? (
+                                <span className="text-[10px] text-magenta font-mono font-semibold">🎙️ Audio Recording</span>
+                              ) : att.isLiveCapture ? (
+                                <span className="text-[10px] text-magenta font-mono font-semibold">📷 Live Watermarked Photo</span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAttachment(att.id)}
+                            className="text-cream-ink/60 hover:text-magenta font-bold text-xs shrink-0 ml-2"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        {att.type === 'video' && att.dataUrl && (
+                          <div className="mt-2 rounded-xl overflow-hidden border border-black/10 max-h-48 bg-black flex items-center justify-center">
+                            <video src={att.dataUrl} controls className="w-full h-auto max-h-48 object-contain" />
+                          </div>
+                        )}
+
+                        {att.type === 'audio' && att.dataUrl && (
+                          <div className="mt-2 p-2.5 bg-black/5 rounded-xl border border-black/10">
+                            <audio src={att.dataUrl} controls className="w-full" />
+                          </div>
+                        )}
+
+                        {att.type === 'image' && att.dataUrl && (
+                          <div className="mt-1 rounded-xl overflow-hidden border border-black/10 max-h-40 bg-black/5 flex items-center justify-center">
+                            <img src={att.dataUrl} alt={att.name} className="w-full h-auto max-h-36 object-contain" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
 
-            {/* Modal Actions */}
-            <div className="flex items-center space-x-3 pt-4 border-t border-black/10">
+            {/* Modal Sticky Actions Footer */}
+            <div className="p-4 sm:p-6 bg-white border-t border-black/10 flex items-center space-x-3 shrink-0 shadow-lg z-10">
               <button
                 onClick={() => setShowReviewModal(false)}
-                className="flex-1 py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
+                className="flex-1 py-3 sm:py-3.5 rounded-full border border-black/20 text-cream-ink hover:bg-cream font-bold text-xs uppercase tracking-wider transition"
               >
                 Back to Editing Text
               </button>
               <button
                 onClick={handleFinalSave}
-                className="flex-1 py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-base tracking-wider transition shadow-lg flex items-center justify-center space-x-2"
+                className="flex-1 py-3 sm:py-3.5 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-sm sm:text-base tracking-wider transition shadow-lg flex items-center justify-center space-x-2"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 <span>CONFIRM & SAVE LOG</span>

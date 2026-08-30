@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2, Globe, FileText, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { PieChart, TrendingUp, User, MapPin, AlertTriangle, ShieldCheck, ChevronRight, Info, CheckCircle2, Globe, FileText, ArrowRight, Shield, ArrowLeft, Crosshair, LocateFixed } from 'lucide-react';
 import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { Incident } from '../types';
 import { analyzeIncidentPatterns } from '../aiEngine';
 import { fetchNearbyCommunitySignals, CommunitySignalCell } from '../firebaseService';
@@ -12,6 +12,50 @@ interface PatternsScreenProps {
   onGenerateReport: () => void;
   onBack?: () => void;
 }
+
+// Map Controller for Smooth Flying / Recentering
+const MapRecenterController: React.FC<{ center: [number, number]; zoom?: number }> = ({ center, zoom = 14 }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo(center, zoom, { animate: true, duration: 1.2 });
+  }, [center, zoom, map]);
+  return null;
+};
+
+// Pulsing Blue Marker for User's Live Current Location ("You Are Here")
+const createUserLocationIcon = () => {
+  return L.divIcon({
+    className: 'custom-user-location-pin',
+    html: `<div style="
+      position: relative;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        position: absolute;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: rgba(56, 189, 248, 0.35);
+        animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+      "></div>
+      <div style="
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #38BDF8;
+        border: 3px solid #FFFFFF;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.9);
+      "></div>
+    </div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 11],
+    popupAnchor: [0, -12]
+  });
+};
 
 const createCustomPinIcon = (count: number) => {
   let size = 32;
@@ -59,6 +103,40 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
 }) => {
   const analysis = useMemo(() => analyzeIncidentPatterns(incidents), [incidents]);
 
+  // Live User Location State
+  const [userCurrentLocation, setUserCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocatingUser, setIsLocatingUser] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
+
+  const requestUserLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationDenied(true);
+      return;
+    }
+    setIsLocatingUser(true);
+    setLocationDenied(false);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserCurrentLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        });
+        setIsLocatingUser(false);
+      },
+      (err) => {
+        console.warn('Live location detection error:', err);
+        setIsLocatingUser(false);
+        setLocationDenied(true);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  useEffect(() => {
+    requestUserLocation();
+  }, [requestUserLocation]);
+
   const locationGroups = useMemo(() => {
     const groups: { [key: string]: { lat: number; lng: number; incidents: Incident[]; locationName: string } } = {};
     
@@ -80,11 +158,34 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
     return Object.values(groups);
   }, [incidents]);
 
+  // Average / Centroid of incidents as fallback
+  const incidentCentroid = useMemo(() => {
+    if (locationGroups.length === 0) return null;
+    const sumLat = locationGroups.reduce((acc, g) => acc + g.lat, 0);
+    const sumLng = locationGroups.reduce((acc, g) => acc + g.lng, 0);
+    return [sumLat / locationGroups.length, sumLng / locationGroups.length] as [number, number];
+  }, [locationGroups]);
+
+  // Final map center logic: Live User Location -> Incident Centroid -> null
+  const mapCenter = useMemo<[number, number] | null>(() => {
+    if (userCurrentLocation) {
+      return [userCurrentLocation.lat, userCurrentLocation.lng];
+    }
+    if (incidentCentroid) {
+      return incidentCentroid;
+    }
+    return null;
+  }, [userCurrentLocation, incidentCentroid]);
+
   const [communitySignals, setCommunitySignals] = useState<CommunitySignalCell[]>([]);
 
   const userLocations = useMemo(() => {
-    return locationGroups.map(g => ({ lat: g.lat, lng: g.lng }));
-  }, [locationGroups]);
+    const locs = locationGroups.map(g => ({ lat: g.lat, lng: g.lng }));
+    if (userCurrentLocation) {
+      locs.push(userCurrentLocation);
+    }
+    return locs;
+  }, [locationGroups, userCurrentLocation]);
 
   useEffect(() => {
     if (userLocations.length > 0) {
@@ -228,28 +329,70 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
           )}
         </div>
         
-        {locationGroups.length === 0 ? (
-          <div className="rounded-3xl bg-bg-black p-8 text-sm text-text-muted font-medium border border-white/10 text-center space-y-2">
-            <p className="font-semibold text-text-light">No Location Coordinates Recorded</p>
-            <p className="text-xs text-text-muted max-w-md mx-auto leading-relaxed">
-              Location hotspots will appear on an interactive map once you add location data to your entries.
-            </p>
+        {!mapCenter ? (
+          <div className="rounded-3xl bg-bg-black p-10 text-center space-y-4 border border-white/10 shadow-xl">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 text-magenta flex items-center justify-center mx-auto shadow-md">
+              <MapPin className="w-6 h-6 text-magenta" />
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-display text-2xl text-text-light uppercase tracking-wide">LOCATION MAP OFFLINE</h4>
+              <p className="text-xs sm:text-sm text-text-muted max-w-md mx-auto leading-relaxed">
+                Enable location access to see your area on the map, or log an incident with location enabled to get started.
+              </p>
+            </div>
+            <button
+              onClick={requestUserLocation}
+              disabled={isLocatingUser}
+              className="px-6 py-3 rounded-full bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-sm tracking-wider uppercase shadow-lg transition active:scale-95 flex items-center justify-center space-x-2 mx-auto disabled:opacity-50"
+            >
+              <LocateFixed className="w-4 h-4" />
+              <span>{isLocatingUser ? 'DETECTING LOCATION...' : 'ENABLE LOCATION ACCESS'}</span>
+            </button>
           </div>
         ) : (
           <div className="rounded-3xl bg-bg-black p-4 space-y-4 shadow-xl border border-white/10">
-            <div className="h-80 w-full rounded-2xl overflow-hidden relative border border-white/10 shadow-inner">
+            <div className="h-96 w-full rounded-2xl overflow-hidden relative border border-white/10 shadow-inner">
+              
+              {/* Floating Recenter Control Button */}
+              <button
+                onClick={requestUserLocation}
+                title="Recenter on my location"
+                disabled={isLocatingUser}
+                className="absolute top-4 right-4 z-[400] p-3 rounded-2xl bg-bg-black/90 hover:bg-magenta text-magenta hover:text-bg-black border border-white/20 shadow-2xl transition-all duration-300 active:scale-95 group"
+              >
+                <LocateFixed className={`w-5 h-5 ${isLocatingUser ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`} />
+              </button>
+
               <MapContainer
-                center={[locationGroups[0].lat, locationGroups[0].lng]}
+                center={mapCenter}
                 zoom={14}
                 scrollWheelZoom={false}
                 style={{ height: '100%', width: '100%' }}
               >
+                <MapRecenterController center={mapCenter} zoom={14} />
+
+                {/* High-Contrast OpenStreetMap Tile Layer (No API Key Required) */}
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  className="map-tiles-dark"
                 />
 
-                {/* Community Signal Layer (Anonymous, Aggregated) */}
+                {/* User's Live Current Location Marker ("You Are Here") */}
+                {userCurrentLocation && (
+                  <Marker
+                    position={[userCurrentLocation.lat, userCurrentLocation.lng]}
+                    icon={createUserLocationIcon()}
+                  >
+                    <Popup>
+                      <div className="p-1 text-xs font-sans text-text-light font-bold">
+                        📍 You are here (Current Live Location)
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
+
+                {/* Community Signal Layer (Anonymous, Aggregated Grid Cells) */}
                 {communitySignals.map((signal, sIdx) => (
                   <Circle
                     key={`signal-${sIdx}`}
@@ -279,6 +422,7 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                   </Circle>
                 ))}
 
+                {/* Personal Incident Pins */}
                 {locationGroups.map((group, idx) => (
                   <Marker
                     key={idx}
@@ -321,17 +465,21 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
 
             <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-text-muted font-medium pt-2 border-t border-white/10">
               <div className="flex items-center space-x-2">
+                <div className="w-3.5 h-3.5 rounded-full bg-[#38BDF8] border-2 border-white shadow-sm"></div>
+                <span>Your Current Location (Live)</span>
+              </div>
+              <div className="flex items-center space-x-2">
                 <div className="w-3.5 h-3.5 rounded-full bg-magenta border border-magenta-deep shadow-sm"></div>
                 <span>Your Personal Incident Pins</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3.5 h-3.5 rounded-full bg-magenta/30 border border-magenta border-dashed"></div>
-                <span>Community signal (anonymous, aggregated)</span>
+                <span>Community Signal (Anonymous, Aggregated)</span>
               </div>
             </div>
 
             <p className="text-xs text-text-muted text-center leading-relaxed font-medium">
-              This shows how many people have anonymously reported something nearby — never who, never what happened. It's a safety signal, not a search tool.
+              Your current location is shown only to you, on your device — it's never stored or shared unless you explicitly opt in when logging an incident. Community signals show anonymous, aggregated counts (+1) per ~100m grid cell, never who or what happened.
             </p>
           </div>
         )}

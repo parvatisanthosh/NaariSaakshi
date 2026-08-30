@@ -205,9 +205,9 @@ export const RecordCallScreen: React.FC<RecordCallScreenProps> = ({
       <div className="flex items-center justify-between">
         <button
           onClick={onCancel}
-          className="inline-flex items-center space-x-1.5 text-xs font-semibold text-teal-400 hover:text-teal-300 transition"
+          className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 text-magenta" />
           <span>Back to Timeline</span>
         </button>
       </div>

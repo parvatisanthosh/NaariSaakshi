@@ -14,6 +14,8 @@ export interface ReportConfig {
   endDate?: string;
   selectedIncidentIds: string[];
   includeAttachmentsList: boolean;
+  embedImageAttachments?: boolean;
+  consentImageInclusion?: boolean;
   confidentialityNotice: boolean;
 }
 
@@ -61,8 +63,8 @@ C. ORIGINAL TRANSCRIPT / LOG
 D. WITNESSES PRESENT
 ${inc.witnesses.length > 0 ? inc.witnesses.map(w => `• ${w}`).join('\n') : 'No immediate witnesses specified.'}
 
-E. ATTACHMENTS / SUPPORTING EVIDENCE
-${inc.attachments.length > 0 ? inc.attachments.map(a => `• ${a.name} (${a.type})`).join('\n') : 'No external file attached.'}
+E. ATTACHMENTS & EVIDENTIARY EXHIBITS
+${inc.attachments.length > 0 ? inc.attachments.map((a, aIdx) => `• Exhibit ${aIdx + 1} (${a.type.toUpperCase()}): "${a.name}" [${a.isLiveCapture ? 'Live Timestamp Watermarked Capture' : 'Uploaded File'}] — Embedded directly in attached PDF report / submitted as evidence enclosure.`).join('\n') : 'No external file attached.'}
 `).join('\n')}
 
 3. PATTERN & IMPACT SUMMARY
@@ -139,24 +141,25 @@ Under current Indian law, any police station is required to register a 'Zero FIR
   } else {
     // Personal record
     return `
-NAARISAAKSHI — SECURE PERSONAL INCIDENT LOG
+EVIDENCEHER — SECURE PERSONAL INCIDENT LOG ARCHIVE
 EXPORT GENERATED ON: ${dateStr}
-OWNER: ${config.complainantName || 'Personal Journal'}
+OWNER / COMPLAINANT: ${config.complainantName || 'Personal Journal'}
+DOCUMENT SCOPE: Personal log covering multiple recorded incidents (${sorted.length} Entries)
 
-SUMMARY OF RECORDS INCLUDED (${sorted.length} Entries):
+SUMMARY OF RECORDS INCLUDED:
 
 ${sorted.map((inc, index) => `
 ENTRY #${index + 1} | ${new Date(inc.incident_datetime).toLocaleDateString()} | ${inc.category}
 --------------------------------------------------------------------------------
 Location: ${inc.location}
-People: ${inc.people_involved.map(p => p.name).join(', ')}
+People: ${inc.people_involved.map(p => p.name).join(', ') || 'None specified'}
 Summary: ${inc.narrative_structured.summary}
 Raw Notes: ${inc.narrative_raw}
 Witnesses: ${inc.witnesses.join(', ') || 'None'}
 Attachments: ${inc.attachments.length} file(s)
 `).join('\n')}
 
-*** End of Export ***
+*** End of Personal Export ***
 `.trim();
   }
 }
@@ -224,10 +227,16 @@ export function downloadPdfReport(incidents: Incident[], config: ReportConfig): 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(50, 50, 50);
 
-  const metaRows = [
+  const metaRows = config.reportType === 'PERSONAL' ? [
+    ['Date Generated:', dateStr],
+    ['Record Owner:', config.complainantName || '[Personal Journal]'],
+    ['Document Scope:', 'Personal log covering multiple recorded incidents'],
+    ['Date Range Covered:', dateRangeText],
+    ['Total Logged Incidents:', `${sorted.length} Entries Recorded`]
+  ] : [
     ['Date Generated:', dateStr],
     ['Complainant Name:', config.complainantName || '[Not Specified]'],
-    ['Respondent / Subject:', config.respondentName || '[Not Specified]'],
+    ['Respondent / Subject:', config.respondentName || '[Single Respondent Scoped]'],
     ['Organization / Dept:', config.organizationOrDept || '[Not Specified]'],
     ['Date Range Covered:', dateRangeText],
     ['Total Logged Incidents:', `${sorted.length} Entries Recorded`]
@@ -360,6 +369,64 @@ export function downloadPdfReport(incidents: Incident[], config: ReportConfig): 
       const attachStr = inc.attachments.map(a => `${a.name} (${a.type})`).join(', ');
       doc.text(attachStr, leftMargin + 38, y);
       y += 5;
+    }
+
+    // Embed Attached Image Evidence directly onto PDF pages (if enabled/consented)
+    if (config.embedImageAttachments !== false) {
+      const imageAttachments = inc.attachments.filter(a => a.type === 'image' && a.dataUrl);
+      imageAttachments.forEach((attImage, imgIdx) => {
+        try {
+          checkPageBreak(85);
+
+          const frameY = y;
+          const imgWidth = Math.min(140, contentWidth - 10);
+          const imgHeight = 70;
+          const frameHeight = imgHeight + 16;
+
+          // Draw subtle background card for Exhibit
+          doc.setFillColor(248, 250, 252);
+          doc.setDrawColor(203, 213, 225);
+          doc.setLineWidth(0.3);
+          doc.rect(leftMargin + 3, frameY, imgWidth + 10, frameHeight, 'FD');
+
+          // Exhibit Header Text
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(15, 118, 110);
+          doc.text(
+            `EXHIBIT #${imgIdx + 1}: ${attImage.name} [${attImage.isLiveCapture ? 'Live Timestamp Watermarked' : 'Uploaded File'}]`,
+            leftMargin + 7,
+            frameY + 6
+          );
+
+          // Add image
+          const imgFormat = attImage.dataUrl?.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+          doc.addImage(
+            attImage.dataUrl!,
+            imgFormat,
+            leftMargin + 8,
+            frameY + 9,
+            imgWidth,
+            imgHeight,
+            undefined,
+            'FAST'
+          );
+
+          // Caption Footer inside box
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          doc.text(
+            `Embedded Evidence Image • Recorded: ${new Date(attImage.uploadedAt).toLocaleString()}`,
+            leftMargin + 8,
+            frameY + frameHeight - 3
+          );
+
+          y = frameY + frameHeight + 8;
+        } catch (e) {
+          console.warn('Could not embed image into PDF:', e);
+        }
+      });
     }
 
     // Rule separator between incidents

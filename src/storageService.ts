@@ -289,8 +289,27 @@ export class StorageService {
       const plainText = JSON.stringify(incidents);
       const encryptedPayload = await encryptData(plainText);
       localStorage.setItem(STORAGE_KEY_INCIDENTS, encryptedPayload);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to save incidents to storage:', e);
+      if (e?.name === 'QuotaExceededError' || e?.code === 22 || e?.number === -2147024882) {
+        console.warn('Storage quota exceeded. Preserving incident entry metadata and narrative.');
+        try {
+          const lightweightIncidents = incidents.map(inc => ({
+            ...inc,
+            attachments: inc.attachments.map(att => {
+              if (att.dataUrl && att.dataUrl.length > 500000) {
+                return { ...att, dataUrl: undefined };
+              }
+              return att;
+            })
+          }));
+          const plainTextLight = JSON.stringify(lightweightIncidents);
+          const encryptedLight = await encryptData(plainTextLight);
+          localStorage.setItem(STORAGE_KEY_INCIDENTS, encryptedLight);
+        } catch (innerErr) {
+          console.error('Fallback lightweight save failed:', innerErr);
+        }
+      }
     }
   }
 

@@ -66,9 +66,9 @@ export const RightsScreen: React.FC<RightsScreenProps> = ({ onOpenSos, onBack })
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
-            className="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-cream-ink hover:text-magenta transition"
+            className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-magenta hover:text-magenta-deep transition"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 text-magenta" />
             <span>Back to Timeline</span>
           </button>
         </div>
