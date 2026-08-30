@@ -3,19 +3,23 @@
 # 🛡️ NaariSaakshi (EvidenceHer)
 ### *Contemporaneous Evidence Journaling & Pattern Intelligence for Workplace & Personal Safety*
 
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-naari--saakshi.vercel.app-E8368F?style=for-the-badge&logo=vercel&logoColor=white)](https://naari-saakshi.vercel.app/)
 [![React](https://img.shields.io/badge/React-19.2-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?style=for-the-badge&logo=leaflet&logoColor=white)](https://leafletjs.com/)
 [![jsPDF](https://img.shields.io/badge/jsPDF-4.2-EC1C24?style=for-the-badge&logo=adobe-acrobat-reader&logoColor=white)](https://github.com/parallax/jsPDF)
-[![License: MIT](https://img.shields.io/badge/License-MIT-E8368F?style=for-the-badge)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-7C5CFF?style=for-the-badge)](LICENSE)
 
 <p align="center">
   <strong>Transforming scattered, overwhelming experiences into tamper-resistant, structured legal evidence.</strong><br>
   Built with local-first privacy, human-in-the-loop AI extraction, POSH Act (2013) compliance tracking, and instantaneous stealth safety controls.
 </p>
 
+### 🔗 **Live Web Application**: [https://naari-saakshi.vercel.app/](https://naari-saakshi.vercel.app/)
+
+[🌐 Live Demo](https://naari-saakshi.vercel.app/) •
 [✨ Key Features](#-key-features) •
 [🏛️ Legal & Compliance Framework](#-legal--compliance-framework) •
 [🧠 AI & Pattern Engine](#-ai-intelligence--pattern-engine) •
@@ -225,6 +229,8 @@ evidenceher/
 ---
 
 ## 🚀 Quick Start
+
+> 🌐 **Try it live instantly without setup:** [**https://naari-saakshi.vercel.app/**](https://naari-saakshi.vercel.app/)
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (version 18.0 or later)
