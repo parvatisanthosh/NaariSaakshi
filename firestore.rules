@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// Community safety signals are paused (see docs/THREAT_MODEL.md, T-15/T-16).
+// The app no longer reads or writes Firestore, so deny everything until a
+// privacy-reviewed, server-aggregated design replaces the old public collection.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

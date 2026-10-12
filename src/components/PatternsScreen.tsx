@@ -4,7 +4,7 @@ import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import { Incident } from '../types';
 import { analyzeIncidentPatterns } from '../aiEngine';
-import { fetchNearbyCommunitySignals, CommunitySignalCell } from '../firebaseService';
+import { COMMUNITY_SIGNALS_ENABLED, fetchNearbyCommunitySignals, CommunitySignalCell } from '../firebaseService';
 
 interface PatternsScreenProps {
   incidents: Incident[];
@@ -219,7 +219,7 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
               <PieChart className="w-6 h-6 text-bg-black" />
             </div>
             <div>
-              <span className="text-xs font-mono font-bold tracking-widest text-magenta uppercase block">AI ESCALATION ENGINE</span>
+              <span className="text-xs font-mono font-bold tracking-widest text-magenta uppercase block">PATTERN SUMMARY</span>
               <h1 className="font-display text-4xl sm:text-6xl tracking-wide text-text-light leading-none">
                 PATTERN DETECTION & INSIGHTS
               </h1>
@@ -241,7 +241,7 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
         </div>
       </section>
 
-      {/* SECTION 2: AI PATTERN SYNTHESIS CARD */}
+      {/* SECTION 2: PATTERN SYNTHESIS CARD */}
       <section className="rounded-3xl bg-bg-black text-text-light p-8 sm:p-10 shadow-xl border border-white/10 space-y-4 relative z-10 w-full film-grain">
         <div className="flex items-center space-x-2 text-magenta">
           <Info className="w-5 h-5 text-magenta" />
@@ -411,11 +411,11 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                         <div className="border-b border-black/10 pb-1 flex items-center justify-between">
                           <span className="font-bold text-magenta text-xs flex items-center space-x-1">
                             <Globe className="w-3.5 h-3.5 text-magenta inline mr-1" />
-                            <span>Community Signal (Anonymous)</span>
+                            <span>Community Signal</span>
                           </span>
                         </div>
                         <p className="text-text-light font-semibold">
-                          {signal.count} anonymous report{signal.count > 1 ? 's' : ''} in this grid area (~100m)
+                          {signal.count} report{signal.count > 1 ? 's' : ''} in this area
                         </p>
                       </div>
                     </Popup>
@@ -472,14 +472,16 @@ export const PatternsScreen: React.FC<PatternsScreenProps> = ({
                 <div className="w-3.5 h-3.5 rounded-full bg-magenta border border-magenta-deep shadow-sm"></div>
                 <span>Your Personal Incident Pins</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3.5 h-3.5 rounded-full bg-magenta/30 border border-magenta border-dashed"></div>
-                <span>Community Signal (Anonymous, Aggregated)</span>
-              </div>
+              {COMMUNITY_SIGNALS_ENABLED && (
+                <div className="flex items-center space-x-2">
+                  <div className="w-3.5 h-3.5 rounded-full bg-magenta/30 border border-magenta border-dashed"></div>
+                  <span>Community Signal (Aggregated)</span>
+                </div>
+              )}
             </div>
 
             <p className="text-xs text-text-muted text-center leading-relaxed font-medium">
-              Your current location is shown only to you, on your device — it's never stored or shared unless you explicitly opt in when logging an incident. Community signals show anonymous, aggregated counts (+1) per ~100m grid cell, never who or what happened.
+              Your current location is shown only to you, on your device. It is saved with an entry only if you choose to add it, and it is never shared. Shared community signals are paused pending a privacy review.
             </p>
           </div>
         )}

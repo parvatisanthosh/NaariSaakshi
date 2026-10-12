@@ -12,9 +12,25 @@ export interface PoshDeadlineInfo {
 export const POSH_DISCLAIMER_TEXT =
   "General guidance based on the POSH Act, 2013 — confirm current deadlines with your organization's ICC or a legal professional, as processes can vary. General informational guidance only — not legal advice.";
 
+/**
+ * Adds calendar months, clamping to the last day of the target month.
+ * Plain Date#setMonth overflows (30 Nov + 3 months -> 2 Mar), which would show the
+ * user more time than she actually has.
+ */
+export function addCalendarMonths(date: Date, months: number): Date {
+  const result = new Date(date);
+  const day = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+  result.setDate(Math.min(day, lastDay));
+  return result;
+}
+
 export const calculatePoshDeadline = (
   incident: Incident,
-  allIncidents: Incident[] = []
+  allIncidents: Incident[] = [],
+  now: Date = new Date()
 ): PoshDeadlineInfo => {
   const incDate = new Date(incident.incident_datetime);
   let baseDate = incDate;
@@ -40,10 +56,8 @@ export const calculatePoshDeadline = (
   }
 
   // POSH 3-month window calculation
-  const deadlineDate = new Date(baseDate);
-  deadlineDate.setMonth(deadlineDate.getMonth() + 3);
+  const deadlineDate = addCalendarMonths(baseDate, 3);
 
-  const now = new Date();
   const diffTime = deadlineDate.getTime() - now.getTime();
   const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 

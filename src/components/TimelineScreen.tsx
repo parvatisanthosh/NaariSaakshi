@@ -148,7 +148,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
               <span className="text-magenta group-hover:text-magenta-light group-hover:drop-shadow-[0_0_35px_rgba(232,54,143,0.9)] transition-all duration-500">STARE BACK.</span>
             </h1>
             <p className="text-base sm:text-xl text-text-muted group-hover:text-text-light transition-colors duration-500 leading-relaxed max-w-3xl pt-2 font-medium drop-shadow-md">
-              India's first encrypted incident journaling ecosystem combining personal voice logging, AI pattern detection, and legal-ready complaint documentation.
+              A private, encrypted journal for documenting harassment as it happens, so that when you decide to complain, your record is organised, dated and ready to share.
             </p>
           </div>
 
@@ -178,7 +178,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
             </div>
             <div className="flex items-center space-x-2.5 text-text-light bg-white/5 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 group-hover:border-magenta/60 group-hover:bg-magenta/10 transition-all duration-300">
               <Sparkles className="w-5 h-5 text-magenta shrink-0" />
-              <span>3 Sec Voice AI Structuring</span>
+              <span>Voice Notes Auto-Organised</span>
             </div>
             <div className="flex items-center space-x-2.5 text-text-light bg-white/5 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 group-hover:border-magenta/60 group-hover:bg-magenta/10 transition-all duration-300">
               <FileText className="w-5 h-5 text-magenta shrink-0" />
@@ -284,7 +284,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                 <h3 className="font-display text-2xl tracking-wide">1-TAP CALL RECORDING</h3>
               </div>
               <p className={`text-xs sm:text-sm mt-2 leading-relaxed ${activeStep === 3 ? 'text-bg-black/90 font-medium' : 'text-cream-ink/80'}`}>
-                Record phone calls on speakerphone under India's one-party consent law. Saves raw call audio as primary evidence and runs live rough transcription for your private records.
+                Record your side of a speakerphone call with a rough transcript for your private records. Recording rules depend on context, so check the guidance before you start.
               </p>
             </div>
 
@@ -491,7 +491,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                   {topPatternCluster.count} incidents logged involving "{topPatternCluster.key}"
                 </p>
                 <p className="text-xs text-text-muted mt-0.5">
-                  AI pattern analysis shows escalating frequency over the last month.
+                  Your entries show this repeating. Review the pattern summary.
                 </p>
               </div>
             </div>
@@ -662,10 +662,10 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
         <div className="space-y-2 text-center sm:text-left">
           <span className="text-sm font-mono uppercase tracking-widest text-cream-ink/70 font-bold block">WHY NAARISAAKSHI EXISTS</span>
           <h2 className="font-display text-5xl sm:text-7xl text-cream-ink tracking-wide leading-none">
-            IN THEIR WORDS.
+            WHO IT'S FOR.
           </h2>
           <p className="text-base text-cream-ink/80 font-medium max-w-2xl">
-            Real experiences from women who believe safety should be proactive, accessible, and shared.
+            Illustrative situations the app is designed around. These are examples, not user testimonials.
           </p>
         </div>
 
@@ -673,25 +673,22 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
           {[
             {
-              initials: 'PM',
-              quote: 'Finally, a safety journal where I can document workplace harassment privately without worrying about data leaks or cloud server access.',
-              name: 'PRIYANSHI MEHTA',
+              initials: '01',
+              quote: 'A manager keeps sending late-night messages. She is not ready to complain yet, but wants every screenshot kept safe and dated in case it continues.',
+              name: 'NOT READY TO REPORT YET',
               bgColor: '#0070F3', // Vibrant Blue card
-              stars: 5,
             },
             {
-              initials: 'KK',
-              quote: 'The AI automatically organized my notes into clear timelines with exact quotes and times. It made all the difference during HR review.',
-              name: 'KAVYA KAPOOR',
+              initials: '02',
+              quote: 'Months of small incidents blur together. A dated log of who, where and what makes the series visible, and shows when the three-month POSH window closes.',
+              name: 'A SERIES, NOT ONE EVENT',
               bgColor: '#E8368F', // Vibrant Magenta card
-              stars: 5,
             },
             {
-              initials: 'SG',
-              quote: 'Exported a POSH-compliant PDF in two clicks. Having everything timestamped gave me the confidence to stand up.',
-              name: 'SAKSHI GUPTA',
+              initials: '03',
+              quote: 'Her phone is sometimes checked by someone else. She needs the journal locked behind a passphrase and a quick way out of the app.',
+              name: 'SOMEONE ELSE HAS ACCESS',
               bgColor: '#0070F3', // Vibrant Blue card
-              stars: 4,
             }
           ].map((item, idx) => {
             const isHovered = activeTestimonial === idx;
@@ -717,14 +714,9 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
                   {item.quote}
                 </p>
 
-                {/* Footer Name & Star Rating */}
+                {/* Footer Scenario Title */}
                 <div className="space-y-2 pt-4 border-t border-white/20">
                   <div className="font-display text-xl tracking-wider uppercase font-bold">{item.name}</div>
-                  <div className="flex space-x-1 text-yellow-300 text-sm">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i}>{i < item.stars ? '★' : '☆'}</span>
-                    ))}
-                  </div>
                 </div>
               </div>
             );
@@ -750,7 +742,7 @@ export const TimelineScreen: React.FC<TimelineScreenProps> = ({
         </div>
 
         <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px]">
-          <span>© 2026 NaariSaakshi. 100% Encrypted Local Storage.</span>
+          <span>© 2026 NaariSaakshi. Encrypted on your device. Not legal advice.</span>
           <span>Designed & Built for Women's Safety & Legal Protection</span>
         </div>
       </footer>

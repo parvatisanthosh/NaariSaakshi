@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Shield, Lock, ExternalLink, Download, Upload, Trash2, RefreshCw, AlertTriangle, CheckCircle2, Info, MapPin, Globe, PhoneCall, ArrowLeft, EyeOff } from 'lucide-react';
 import { AppSettings, Incident } from '../types';
 import { LEGAL_CALL_RECORDING_INFO } from './RecordCallScreen';
+import { VaultSecuritySection } from './VaultSecuritySection';
+import { StorageService } from '../storageService';
+import type { VaultStatus } from '../vault/vault';
 
 interface SettingsScreenProps {
   settings: AppSettings;
@@ -11,6 +14,9 @@ interface SettingsScreenProps {
   onClearAllData: () => void;
   onClearLocationData: () => void;
   onImportData: (imported: Incident[]) => void;
+  vaultStatus: VaultStatus | null;
+  onVaultChanged: () => void;
+  onLockNow: () => void;
   onBack?: () => void;
 }
 
@@ -22,9 +28,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onClearAllData,
   onClearLocationData,
   onImportData,
+  vaultStatus,
+  onVaultChanged,
+  onLockNow,
   onBack
 }) => {
-  const [pinInput, setPinInput] = useState(settings.pinCode || '');
   const [quickExitUrl, setQuickExitUrl] = useState(settings.quickExitUrl || 'https://weather.com');
   const [trustedNameInput, setTrustedNameInput] = useState(settings.trustedContactName || '');
   const [trustedPhoneInput, setTrustedPhoneInput] = useState(settings.trustedContactPhone || '');
@@ -41,24 +49,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     showNotice('Trusted contact details saved.');
   };
 
-  const handleTogglePin = () => {
-    const nextPinEnabled = !settings.pinEnabled;
-    const newSettings = {
-      ...settings,
-      pinEnabled: nextPinEnabled,
-      pinCode: nextPinEnabled ? (pinInput || '1234') : ''
-    };
-    onUpdateSettings(newSettings);
-    showNotice(nextPinEnabled ? 'PIN lock protection activated.' : 'PIN lock disabled.');
-  };
-
-  const handleSavePin = () => {
-    if (pinInput.length === 4) {
-      onUpdateSettings({ ...settings, pinCode: pinInput, pinEnabled: true });
-      showNotice('PIN code updated successfully.');
-    }
-  };
-
   const handleToggleQuickExit = () => {
     const newSettings = { ...settings, quickExitEnabled: !settings.quickExitEnabled };
     onUpdateSettings(newSettings);
@@ -73,15 +63,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     setShowExportConfirm(true);
   };
 
-  const handleConfirmExportJson = () => {
+  const handleConfirmExportJson = async () => {
     setShowExportConfirm(false);
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(incidents, null, 2));
+    // Media lives in the encrypted vault, so inline it to make the backup self-contained.
+    const withMedia = await StorageService.exportIncidentsWithMedia();
+    const blob = new Blob([JSON.stringify(withMedia, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `NaariSaakshi_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.href = url;
+    downloadAnchor.download = `NaariSaakshi_Backup_${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
     showNotice('Backup JSON exported successfully.');
   };
 
@@ -207,52 +201,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
       </section>
 
-      {/* Security: PIN Lock */}
-      <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-magenta/15 border border-magenta/40 flex items-center justify-center text-magenta">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-display text-2xl text-cream-ink tracking-wide block">APP PIN SECURITY LOCK</span>
-              <span className="text-xs text-cream-ink/70 font-medium">Require 4-digit code when opening NaariSaakshi</span>
-            </div>
-          </div>
-
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.pinEnabled}
-              onChange={handleTogglePin}
-              className="sr-only peer"
-            />
-            <div className="w-12 h-6 bg-cream border border-black/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-cream-ink after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-magenta peer-checked:after:bg-bg-black"></div>
-          </label>
-        </div>
-
-        {settings.pinEnabled && (
-          <div className="pt-4 border-t border-black/10 space-y-3">
-            <label className="block text-cream-ink font-bold text-xs uppercase tracking-wider">Set 4-Digit Security PIN</label>
-            <div className="flex space-x-3">
-              <input
-                type="password"
-                maxLength={4}
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                placeholder="1234"
-                className="w-36 bg-cream/40 border border-black/10 rounded-2xl px-4 py-3 text-center font-display text-2xl tracking-widest text-cream-ink focus:outline-none focus:border-magenta focus:bg-white transition-all shadow-inner"
-              />
-              <button
-                onClick={handleSavePin}
-                className="px-6 py-3 bg-magenta hover:bg-magenta-deep text-bg-black font-display font-bold text-lg tracking-wider rounded-full shadow-md transition"
-              >
-                SAVE PIN
-              </button>
-            </div>
-          </div>
-        )}
-      </section>
+      {/* Security: Vault encryption & lock */}
+      <VaultSecuritySection vaultStatus={vaultStatus} onVaultChanged={onVaultChanged} onLockNow={onLockNow} />
 
       {/* Theme Mode Selector Section */}
       <section className="bg-white border border-black/10 rounded-3xl p-8 space-y-6 text-sm shadow-xl relative z-10 w-full text-cream-ink">
@@ -403,7 +353,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       <section className="bg-cream text-cream-ink border border-black/10 rounded-3xl p-8 space-y-3 text-xs shadow-xl relative z-10 w-full">
         <div className="flex items-center space-x-3 text-magenta font-display text-2xl tracking-wide uppercase">
           <PhoneCall className="w-5 h-5" />
-          <span>CALL RECORDING & ONE-PARTY CONSENT LEGAL GUIDE</span>
+          <span>CALL RECORDING: WHAT TO KNOW</span>
         </div>
 
         <p className="text-cream-ink/90 font-medium leading-relaxed text-sm">
@@ -458,38 +408,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
       </section>
 
-      {/* Community Safety Signal Privacy Explainer Card */}
+      {/* Community Safety Signals: paused */}
       <section className="bg-cream text-cream-ink border border-black/10 rounded-3xl p-8 space-y-4 text-xs shadow-xl relative z-10 w-full">
         <div className="flex items-center space-x-3 text-magenta font-display text-2xl tracking-wide uppercase">
           <Globe className="w-5 h-5" />
-          <span>COMMUNITY SAFETY SIGNALS & PRIVACY GUARANTEE</span>
+          <span>COMMUNITY SAFETY SIGNALS: PAUSED</span>
         </div>
-        
         <p className="text-cream-ink/90 font-medium leading-relaxed text-sm">
-          When logging an entry with location, you can choose per incident to anonymously contribute to a shared safety signal map for nearby users.
+          Shared location counts are switched off. A small area with only one or two reports can point to a specific
+          home or office, so they were not truly anonymous. Nothing from this device is sent to a community map.
         </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-          <div className="bg-white/80 p-5 rounded-2xl border border-black/10 space-y-2 shadow-sm">
-            <span className="font-bold text-magenta text-xs uppercase tracking-wider block">✓ WHAT IS SHARED (WHEN OPTED IN)</span>
-            <ul className="text-cream-ink/90 text-xs font-medium space-y-1">
-              <li>• Rounded ~100m grid cell count (+1)</li>
-              <li>• Broad incident category (e.g. Verbal)</li>
-            </ul>
-          </div>
-
-          <div className="bg-white/80 p-5 rounded-2xl border border-black/10 space-y-2 shadow-sm">
-            <span className="font-bold text-magenta text-xs uppercase tracking-wider block">✕ WHAT IS NEVER SHARED</span>
-            <ul className="text-cream-ink/90 text-xs font-medium space-y-1">
-              <li>• Names, people involved, witnesses</li>
-              <li>• Raw narratives or summary text</li>
-              <li>• User ID or device fingerprint</li>
-            </ul>
-          </div>
-        </div>
-
-        <p className="text-xs text-cream-ink/70 italic font-medium pt-1">
-          "This shows how many people have anonymously reported something nearby — never who, never what happened. It's a safety signal, not a search tool."
+        <p className="text-xs text-cream-ink/70 font-medium">
+          If sharing returns, it will use coarser areas, show an area only once several different people have
+          reported there, delay publishing, and stay off unless you turn it on.
         </p>
       </section>
 

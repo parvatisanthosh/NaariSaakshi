@@ -13,8 +13,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-7C5CFF?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <strong>Transforming scattered, overwhelming experiences into tamper-resistant, structured legal evidence.</strong><br>
-  Built with local-first privacy, human-in-the-loop AI extraction, POSH Act (2013) compliance tracking, and instantaneous stealth safety controls.
+  <strong>A private, encrypted journal for documenting harassment before you are ready to report it.</strong><br>
+  Local-first encrypted storage, human-reviewed auto-structuring, POSH Act (2013) filing-window tracking, and quick-exit safety controls.
 </p>
 
 ### 🔗 **Live Web Application**: [https://naari-saakshi.vercel.app/](https://naari-saakshi.vercel.app/)
@@ -26,7 +26,7 @@
 [🔒 Privacy & Stealth Architecture](#-privacy--stealth-architecture) •
 [🚀 Quick Start](#-quick-start) •
 [📁 Project Structure](#-project-structure) •
-[📄 Export Formats](#-court--hr-ready-export-engine)
+[📄 Export Formats](#-complaint-draft-export)
 
 ---
 
@@ -36,7 +36,7 @@
 
 Workplace harassment and personal boundary violations often occur incrementally over time. Victims frequently face skepticism when attempting to report isolated incidents months later without contemporaneous records. 
 
-**NaariSaakshi** (meaning *"Woman as Witness"*, codenamed *EvidenceHer*) is a specialized web application engineered to solve the **"structured evidence over time"** challenge. It empowers individuals to record detailed contemporaneous logs (voice, video, photos, call recordings, and text), uses intelligent AI to structure raw narratives into verifiable legal formats, detects escalating repeat-offender patterns, tracks strict statutory filing deadlines under India's POSH Act, and generates audit-ready PDF complaint packages for Internal Complaints Committees (ICC) or Law Enforcement.
+**NaariSaakshi** (meaning *"Woman as Witness"*, codenamed *EvidenceHer*) is a specialized web application engineered to solve the **"structured evidence over time"** challenge. It empowers individuals to record detailed contemporaneous logs (voice, video, photos, call recordings, and text), suggests a structured summary from free-text narratives for the user to review, highlights repeat people and places across entries, estimates the filing window under India's POSH Act, and drafts PDF complaint documents for Internal Complaints Committees (ICC) or the police. It does not make evidence admissible by itself; see [Legal limits](docs/LEGAL_LIMITS.md).
 
 ```
 ┌─────────────────┐     ┌──────────────────────┐     ┌────────────────────────┐
@@ -57,13 +57,13 @@ Workplace harassment and personal boundary violations often occur incrementally 
 
 ### 🎙️ 1. Multi-Modal Contemporaneous Evidence Logging
 - **Voice-to-Text & Audio Journaling**: Record audio memos with real-time waveform visualization and ambient recording capabilities.
-- **Forensic Timestamp Photo Capture**: In-app camera module embeds irreversible cryptographic-style timestamp and location overlays into image exhibits.
+- **Timestamped Photo Capture**: In-app camera adds a visible date, time and optional location label. The label aids readability; it is not proof of capture time.
 - **Quick Capture (Live Video & Audio)**: 1-tap instant recording mode for in-the-moment situations. Automatically saves draft entries even during unexpected browser interrupts.
-- **Speakerphone Call Recording**: Guided recording interface adhering to Indian one-party consent standards with live rough transcription notes.
+- **Speakerphone Call Recording**: Guided recording of your side of a call with a rough transcript, plus context-specific guidance on when recording is appropriate.
 - **Unsaved Notes Protection**: 3-option modal safeguard (`Save as Draft`, `Discard & Leave`, `Continue Editing`) prevents accidental data loss during stress.
 
-### 🤖 2. Human-in-the-Loop AI Extraction Engine
-- **Intelligent Field Parsing**: Automatically extracts structured variables from conversational input:
+### 🤖 2. Human-Reviewed Auto-Structuring
+- **Rule-Based Field Parsing**: On-device rules suggest structured fields from conversational input:
   - Incident Date & Time
   - Precise Location / Workspace Area
   - Individuals Involved (Clean Name & Role Normalization)
@@ -74,47 +74,47 @@ Workplace harassment and personal boundary violations often occur incrementally 
 
 ### 📈 3. Pattern Recognition & Risk Escalation
 - **Repeat Offender Tracking**: Cross-incident entity resolution detects repeat perpetrators across varying dates and locations.
-- **Escalation Scoring**: Calculates dynamic risk scores based on frequency, severity, and temporal proximity.
-- **Dynamic Leaflet Hotspots Map**: Interactive dark-matter map rendering anonymous incident clusters, live user GPS positioning (`You Are Here` pulsing beacon), and centroid fallbacks.
+- **Pattern Summary Score**: A transparent frequency/recency summary of your own entries. It is not a prediction of danger.
+- **Personal Incident Map**: Leaflet map of entries you chose to tag with a location, with on-device GPS positioning. Shared community signals are paused pending a privacy review.
 - **Proactive Risk Warning Banners**: Contextual banners alert users when multiple incidents indicate systemic behavior.
 
 ### ⚖️ 4. POSH Act (2013) Deadline & Compliance Engine
-- **Statutory 90-Day Clock**: Calculates remaining days to file complaints under the Sexual Harassment of Women at Workplace Act, 2013.
+- **Three-Month Filing Window**: Estimates the Section 9 window (three calendar months, clamped correctly at month ends) under the Sexual Harassment of Women at Workplace Act, 2013.
 - **Incident-Series Rule**: Automatically anchors the 3-month statutory window to the **most recent incident** in an ongoing series.
 - **Extension Advisory**: Flags eligibility for the 3-month ICC extension window with required justification guidance.
 
-### 📄 5. Court & HR-Ready Export Engine
+### 📄 5. Complaint Draft Export
 - **1-Click jsPDF Generation**: Produces formal, numbered, chronologically indexed complaint dossiers.
 - **Embedded Evidence Exhibits**: Directly embeds timestamped photographic evidence cards and attachment registries into PDF pages.
 - **Three Specialized Export Formats**:
   1. **POSH / ICC Formal Complaint**: Includes corporate metadata, formal prayer, relief requests, and verification clause.
-  2. **Police Complaint / FIR Draft**: Pre-formatted for law enforcement with statutory Zero FIR notices and Section 166A provisions.
+  2. **Police Complaint / FIR Draft**: Pre-formatted for law enforcement with Zero FIR notices (BNSS Section 173) and Section 199 BNS (formerly 166A IPC).
   3. **Personal Confidential Archive**: Exhaustive chronological journal export for personal records.
 
 ### 🛡️ 6. Stealth, Privacy & Panic Controls
 - **Instant Quick Exit**: 1-tap header button or keyboard `Esc` panic trigger instantly redirects the browser to safe decoy websites (e.g., Weather or Google).
 - **Disguise Screen / Stealth Skin**: Toggles live video recording into a realistic, innocent notes/calculator interface while recording silently in the background.
-- **Security PIN Lock**: 4-digit PIN security with automatic lock timers (3-minute inactivity, 30-second tab blur, or screen lock).
+- **Passphrase Vault Lock**: Argon2id-derived key unlocks an AES-256-GCM vault; nothing that can decrypt it is stored on the device. One-time recovery code; auto-lock after 3 minutes idle or 30 seconds in the background.
 - **Emergency SOS Panel**: Persistent 1-tap calling for **112** (Emergency), **181** (Women's Helpline), **1091** (Distress Helpline), and **14416** (Tele-MANAS Mental Health Support) + 1-tap SMS location dispatch to a Trusted Contact.
-- **Local-First Zero-Knowledge Storage**: Data is saved on-device via browser storage by default with optional encrypted Firebase sync and JSON backup/restore.
+- **Encrypted Local-First Storage**: Entries and media live in an encrypted IndexedDB vault in the browser, with each attachment's SHA-256 recorded on save. Backup is a manual (unencrypted) JSON export; there is no cloud sync.
 
 ---
 
 ## 🏛️ Legal & Compliance Framework
 
-NaariSaakshi is built upon established Indian legal principles to ensure records hold probative value:
+NaariSaakshi organises records around Indian law. Whether a record is admissible or persuasive is decided by an ICC, police or court, never by the app. See [docs/LEGAL_LIMITS.md](docs/LEGAL_LIMITS.md).
 
 | Legal Provision | Application in NaariSaakshi |
 | :--- | :--- |
-| **POSH Act, 2013 (Section 9)** | Automates the 3-month filing deadline calculation, dynamically shifting the baseline date if an ongoing series of harassment is identified. |
-| **Zero FIR (CrPC / BNSS)** | Pre-populates police drafts with explicit legal citations compelling any police station to register an FIR irrespective of territorial jurisdiction. |
-| **Section 166A IPC / BNS** | Educates users that police refusal to register complaints regarding crimes against women is a punishable criminal offence. |
-| **One-Party Call Recording** | Aligns with Supreme Court precedents permitting individuals to record phone conversations they are directly participating in. |
-| **Section 65B IEA / Sec 63 BSA** | Formats digital metadata, timestamps, and exhibit summaries to streamline electronic evidence certification. |
+| **POSH Act, 2013 (Section 9)** | Estimates the three-month filing window, anchored to the last incident in a series, and explains the up-to-three-month extension. |
+| **Zero FIR (BNSS Section 173)** | Police drafts note that an FIR can be registered at any police station irrespective of jurisdiction. |
+| **Section 199 BNS (formerly 166A IPC)** | Explains that failing to record information about certain offences against women is itself punishable. |
+| **Recordings as evidence** | Explains that courts have admitted relevant, accurate, untampered recordings (R.M. Malkani, 1973), and that this is not blanket permission to record. |
+| **Section 63 BSA (formerly 65B IEA)** | Records SHA-256 hashes of stored media to support a later electronic-evidence certificate, which must be completed and signed by the appropriate person. |
 
 ---
 
-## 🧠 AI Intelligence & Pattern Engine
+## 🧠 Auto-Structuring & Pattern Engine
 
 ```
 Raw Voice / Free Text Log
@@ -135,40 +135,29 @@ Raw Voice / Free Text Log
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│         Human-in-the-Loop User Verification            │
+│               Human Review Before Saving               │
 │       (Editable Draft Review Modal Before Save)        │
 └────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔒 Privacy & Stealth Architecture
+## 🔒 Privacy & Encryption Architecture
 
 ```
-                                 [ USER DEVICE ]
-                                        │
-             ┌──────────────────────────┴──────────────────────────┐
-             ▼                                                     ▼
-   ┌───────────────────┐                                 ┌───────────────────┐
-   │ Local-First Store │                                 │  Stealth Layer    │
-   │ (IndexedDB/Local) │                                 │                   │
-   │                   │                                 │ • Quick Exit (Esc)│
-   │ • Encrypted PIN   │                                 │ • Screen Disguise │
-   │ • Watermarked Media                                 │ • Auto-Lock Timers│
-   │ • Offline NLP     │                                 │ • Popstate Stack  │
-   └───────────────────┘                                 └───────────────────┘
-             │
-      (Optional Sync)
-             ▼
-   ┌───────────────────┐
-   │ Firebase Backend  │
-   │ (End-to-End Auth) │
-   └───────────────────┘
+ passphrase ────Argon2id──► KEK  ─┐
+ recovery code ──PBKDF2───► KEK' ─┼─ unwraps ─► master key (AES-256, in memory only while unlocked)
+ no passphrase: non-extractable   │                 │
+ device key kept in IndexedDB ────┘                 ├─► incidents store: one AES-GCM record per incident
+                                                    └─► media store: original bytes per attachment (+ SHA-256)
+
+ Every ciphertext: fresh 96-bit nonce, AAD = vault id + purpose + record id
 ```
 
-- **Zero Unprompted Data Transmission**: Incident notes, recordings, and media never leave the user's browser unless the user explicitly exports or configures cloud sync.
-- **Tamper-Evident Media Stamping**: Live-captured photos embed date, time, and approximate coordinate text directly onto the pixel canvas.
-- **Browser History Integration**: Deep hash routing (`#timeline`, `#incident-xyz`, `#patterns`) enables native browser back/forward buttons without leaving the secure app context.
+- **Nothing that can decrypt the vault is stored once a passphrase is set.** Changing it re-wraps one 32-byte key; nothing else is re-encrypted.
+- **Without a passphrase the journal is encrypted at rest but opens automatically.** The app says so plainly instead of implying protection it does not give.
+- **No server receives your notes.** The one network path for content is the browser's own speech recognition (Chrome sends audio to Google), which the app discloses.
+- Threat model and known limits: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md). Vulnerability reports: [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -194,26 +183,27 @@ evidenceher/
 ├── src/
 │   ├── assets/                   # Static media assets
 │   ├── components/
-│   │   ├── CameraCaptureModal.tsx    # Forensic timestamp photo capture
+│   │   ├── CameraCaptureModal.tsx    # Photo capture with visible date/time label
 │   │   ├── ChatbotModal.tsx          # Safety assistant with legal knowledge base
 │   │   ├── FAQScreen.tsx             # Frequently asked questions & guides
 │   │   ├── IncidentDetailScreen.tsx  # Detailed incident viewer & exhibit inspector
 │   │   ├── LoadingScreen.tsx         # Branded loading experience
-│   │   ├── LogIncidentScreen.tsx     # Voice & text logging with AI extractor
+│   │   ├── LogIncidentScreen.tsx     # Voice & text logging with auto-structuring
 │   │   ├── Navigation.tsx            # Sticky header, bottom nav & SOS controls
 │   │   ├── PatternsScreen.tsx        # Pattern analytics & Leaflet hotspot map
-│   │   ├── PinLockModal.tsx          # 4-digit PIN security lock screen
+│   │   ├── VaultUnlockModal.tsx      # Passphrase / recovery-code unlock screen
 │   │   ├── QuickCaptureScreen.tsx    # Live video/audio recorder with disguise mode
 │   │   ├── RecordCallScreen.tsx      # Speakerphone call audio recorder
 │   │   ├── ReportScreen.tsx          # Multi-format POSH/Police PDF report generator
 │   │   ├── RightsScreen.tsx          # Interactive Myth vs. Fact legal rights guide
-│   │   ├── SettingsScreen.tsx        # PIN, Quick Exit, Backup & Data controls
+│   │   ├── SettingsScreen.tsx        # Vault lock, Quick Exit, Backup & Data controls
 │   │   ├── SosPanelModal.tsx         # Emergency helplines (112, 181, 1091, 14416)
 │   │   └── TimelineScreen.tsx        # Filterable chronological incident timeline
 │   ├── aiEngine.ts               # Local NLP extraction & pattern clustering engine
 │   ├── chatbotKnowledge.ts       # Grounded legal knowledge base & distress router
-│   ├── firebaseService.ts        # Optional cloud synchronization layer
-│   ├── poshDeadlineHelper.ts     # POSH Act 2013 90-day deadline calculator
+│   ├── firebaseService.ts        # Community signals (paused; no network while disabled)
+│   ├── poshDeadlineHelper.ts     # POSH Act 2013 three-month window calculator
+│   ├── vault/                    # Encrypted IndexedDB vault: crypto, key wrapping, migration
 │   ├── reportEngine.ts           # jsPDF formal complaint & exhibit compiler
 │   ├── storageService.ts         # Local-first storage & JSON data management
 │   ├── style.css                 # Custom CSS variables, themes & Leaflet styles
@@ -244,7 +234,7 @@ npm install
 ```
 
 ### 2. Configure Environment Variables (Optional)
-If you wish to enable cloud sync via Firebase, copy `.env.example` to `.env` and provide your project credentials:
+Firebase is only used by the community-signals feature, which is currently paused. To work on it, copy `.env.example` to `.env` and provide your project credentials:
 ```env
 VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
@@ -253,13 +243,19 @@ VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
-*(Note: If Firebase credentials are not provided, NaariSaakshi operates in 100% offline Local-First mode without restrictions.)*
+*(Note: No Firebase credentials are needed to run the app.)*
 
 ### 3. Launch Development Server
 ```bash
 npm run dev
 ```
 Open your browser and navigate to `http://localhost:5173`.
+
+### Run the Test Suite
+```bash
+npm test
+```
+Covers the vault crypto (tamper and wrong-key rejection, AAD binding, KDF known answers), passphrase/recovery flows, migration from the pre-vault storage format, and POSH date arithmetic.
 
 ### 4. Build Production Bundle
 ```bash

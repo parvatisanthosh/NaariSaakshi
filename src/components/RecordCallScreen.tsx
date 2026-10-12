@@ -9,9 +9,9 @@ interface RecordCallScreenProps {
 }
 
 export const LEGAL_CALL_RECORDING_INFO = {
-  headline: "One-Party Consent & Speakerphone Guidance",
-  mainNotice: "You can legally record calls you're personally part of in India without telling the other person, under a longstanding Supreme Court ruling. This does not apply to recording conversations you're not part of. For best audio quality, put your call on speakerphone before starting.",
-  legalNotice: "Laws can vary by context and this isn't legal advice — if you plan to use a recording formally (HR complaint, police, court), consider asking a lawyer or your ICC about certification requirements for the recording to be used as evidence."
+  headline: "Recording Calls: What to Know First",
+  mainNotice: "Indian courts have accepted recordings of conversations as evidence when they are relevant, accurate and untampered (R.M. Malkani v. State of Maharashtra, 1973). That is not a blanket rule that every recording is lawful: privacy, your workplace's policies and the setting all matter. Only record conversations you are part of, never in private spaces such as washrooms or someone's home, and stop if recording puts you at risk. For best audio quality, put the call on speakerphone.",
+  legalNotice: "General information, not legal advice. To use a recording formally (ICC, police or court), keep the original file unedited and ask a lawyer or your ICC about the electronic-evidence certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (formerly Section 65B of the Indian Evidence Act)."
 };
 
 export const RecordCallScreen: React.FC<RecordCallScreenProps> = ({
@@ -221,7 +221,7 @@ export const RecordCallScreen: React.FC<RecordCallScreenProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-charcoal-100">Record a Call</h2>
-              <span className="text-xs text-charcoal-400">One-Party Consent Guidance</span>
+              <span className="text-xs text-charcoal-400">Recording guidance</span>
             </div>
           </div>
 
@@ -305,7 +305,7 @@ export const RecordCallScreen: React.FC<RecordCallScreenProps> = ({
           </div>
 
           <p className="text-xs text-charcoal-300 leading-relaxed">
-            Call audio is saved. Briefly describe who was calling and what was said so AI can structure the details for your records:
+            Call audio is saved. Briefly describe who was calling and what was said so the details can be organised for your records:
           </p>
 
           <textarea

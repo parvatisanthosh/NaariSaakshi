@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { ArrowLeft, Calendar, MapPin, User, Users, Tag, Trash2, Edit3, Save, X, Paperclip, AlertOctagon, Check, Mic, Camera, Plus, Clock, Video } from 'lucide-react';
 import { CategoryType, Incident, Attachment } from '../types';
-import { StorageService } from '../storageService';
 import { CameraCaptureModal } from './CameraCaptureModal';
 import { calculatePoshDeadline } from '../poshDeadlineHelper';
 
@@ -69,7 +68,6 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
       setAttachmentsList(updatedAtts);
 
       const updatedIncident = { ...incident, attachments: updatedAtts };
-      await StorageService.updateIncident(updatedIncident);
       onUpdate(updatedIncident);
     };
     reader.readAsDataURL(file);
@@ -80,7 +78,6 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
     setAttachmentsList(updatedAtts);
 
     const updatedIncident = { ...incident, attachments: updatedAtts };
-    await StorageService.updateIncident(updatedIncident);
     onUpdate(updatedIncident);
   };
 
@@ -89,7 +86,6 @@ export const IncidentDetailScreen: React.FC<IncidentDetailScreenProps> = ({
     setAttachmentsList(updatedAtts);
 
     const updatedIncident = { ...incident, attachments: updatedAtts };
-    await StorageService.updateIncident(updatedIncident);
     onUpdate(updatedIncident);
   };
 

@@ -21,14 +21,23 @@ export const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-7E9H7NGZJB"
 };
 
+/**
+ * Community signals are paused pending a privacy review: a ~100 m cell with one or two
+ * reports can point at a specific home or office, so the counts were not truly anonymous.
+ * While false, nothing is read from or written to Firestore and Firebase is never initialized.
+ */
+export const COMMUNITY_SIGNALS_ENABLED = false;
+
 let db: any = null;
 
-try {
-  const apps = getApps();
-  const app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
-  db = getFirestore(app);
-} catch (e) {
-  console.warn('Firebase initialization skipped or failed:', e);
+if (COMMUNITY_SIGNALS_ENABLED) {
+  try {
+    const apps = getApps();
+    const app = apps.length === 0 ? initializeApp(firebaseConfig) : apps[0];
+    db = getFirestore(app);
+  } catch (e) {
+    console.warn('Firebase initialization skipped or failed:', e);
+  }
 }
 
 /**
@@ -63,23 +72,8 @@ export interface CommunitySignalCell {
   };
 }
 
-// In-memory fallback / cache for local demo testing
-const localSignalCache: { [gridKey: string]: CommunitySignalCell } = {
-  "12.972,77.595": {
-    gridKey: "12.972,77.595",
-    lat: 12.972,
-    lng: 77.595,
-    count: 4,
-    categoryBreakdown: {
-      verbal: 2,
-      physical: 1,
-      digital: 0,
-      stalking: 1,
-      quid_pro_quo: 0,
-      other: 0
-    }
-  }
-};
+// In-memory cache of this session's own contributions
+const localSignalCache: { [gridKey: string]: CommunitySignalCell } = {};
 
 /**
  * Anonymously contributes a incident's rounded grid cell and category to Firestore.
@@ -90,6 +84,7 @@ export const contributeAnonymousSignal = async (
   lng: number,
   category: CategoryType
 ): Promise<boolean> => {
+  if (!COMMUNITY_SIGNALS_ENABLED) return false;
   const gridKey = getGridKey(lat, lng);
   const catKey = getCategoryFieldKey(category);
 
@@ -141,7 +136,7 @@ export const contributeAnonymousSignal = async (
 export const fetchNearbyCommunitySignals = async (
   userLocations: { lat: number; lng: number }[]
 ): Promise<CommunitySignalCell[]> => {
-  if (userLocations.length === 0) return [];
+  if (!COMMUNITY_SIGNALS_ENABLED || userLocations.length === 0) return [];
 
   const resultsMap: { [gridKey: string]: CommunitySignalCell } = {};
 

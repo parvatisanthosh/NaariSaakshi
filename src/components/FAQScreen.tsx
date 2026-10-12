@@ -15,7 +15,7 @@ const FAQS: FAQItem[] = [
   {
     category: 'Privacy & Security',
     question: 'Where is my incident data stored? Is it safe?',
-    answer: 'Your data is 100% stored locally on your device in browser storage using AES-GCM 256-bit encryption. No incident notes, names, or voice transcripts are ever transmitted to any central server or cloud database.'
+    answer: 'Entries and media are stored only in this browser, encrypted with AES-256-GCM. NaariSaakshi has no server that receives your notes. Two caveats: without a passphrase, anyone who can open this browser can read the journal; and voice typing uses the speech recognition built into your browser, which in Chrome sends the audio to Google to be transcribed.'
   },
   {
     category: 'Privacy & Security',
@@ -24,18 +24,18 @@ const FAQS: FAQItem[] = [
   },
   {
     category: 'Privacy & Security',
-    question: 'How does the App PIN Lock work?',
-    answer: 'You can enable a 4-digit security PIN in Settings. Once enabled, NaariSaakshi will automatically lock after 3 minutes of inactivity or 30 seconds after switching browser tabs, requiring your PIN to reopen.'
+    question: 'How does the passphrase lock work?',
+    answer: 'Set a passphrase in Settings. The key that decrypts your journal is then derived from the passphrase each time you unlock and is never stored on the device. The app locks after 3 minutes of inactivity or 30 seconds in the background. You also get a one-time recovery code; if you lose both, the journal cannot be recovered by anyone.'
   },
   {
     category: 'Features & Journaling',
-    question: 'How does Voice Recording & AI Structuring work?',
-    answer: 'When logging an incident, you can speak in your own words. The built-in AI engine transcribes your speech locally and automatically extracts specific dates, locations, people involved, key actions, and witness details into a structured entry.'
+    question: 'How do voice notes and auto-structuring work?',
+    answer: 'You can speak in your own words. The speech recognition built into your browser turns it into text (in Chrome this sends the audio to Google), then on-device rules suggest dates, locations, people, key actions and witnesses. Every suggestion is shown for you to review and edit before anything is saved. You can always type instead.'
   },
   {
     category: 'Features & Journaling',
     question: 'What is Pattern Detection and Escalation Scoring?',
-    answer: 'NaariSaakshi cross-references your logged entries over time to identify recurring offenders, frequent harassment locations, or escalating frequency. When 2 or more incidents involve the same individual or place, the app alerts you with an escalation score (1-10).'
+    answer: 'NaariSaakshi cross-references your logged entries over time to identify recurring offenders, frequent harassment locations, or escalating frequency. When 2 or more incidents involve the same individual or place, the app highlights the pattern. The score is a simple frequency summary, not a prediction of risk.'
   },
   {
     category: 'Legal & Reports',
@@ -45,12 +45,12 @@ const FAQS: FAQItem[] = [
   {
     category: 'Legal & Reports',
     question: 'What is the POSH Filing Window Indicator?',
-    answer: 'Under the POSH Act 2013, complaints should ideally be submitted within 3 months of the last incident in a series. NaariSaakshi automatically calculates and displays your remaining filing window for each incident or incident series.'
+    answer: 'Under Section 9 of the POSH Act 2013, a complaint is generally made within three months of the incident, or of the last incident in a series. The committee can extend this by up to three more months if circumstances prevented you, with reasons recorded in writing. NaariSaakshi shows an estimate of this window; confirm the dates with your ICC or a lawyer.'
   },
   {
     category: 'Community Safety Signals',
-    question: 'What are Community Safety Signals? Is my identity revealed?',
-    answer: 'Community Safety Signals allow you to voluntarily contribute an anonymous location count (+1) to a shared grid map (~100m grid cell) when logging an incident. NO names, NO narratives, NO timestamps, and NO personal identifiers are ever sent — only an anonymous aggregate count.'
+    question: 'What happened to Community Safety Signals?',
+    answer: 'They are paused. A ~100 m grid cell with only one or two reports can point to a specific home or office, so these counts were not truly anonymous. Sharing will only return with stronger protections (coarser areas, a minimum number of contributors and delayed publishing) after a privacy review.'
   }
 ];
 

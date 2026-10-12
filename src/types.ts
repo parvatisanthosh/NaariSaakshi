@@ -18,8 +18,14 @@ export interface Attachment {
   id: string;
   name: string;
   type: 'image' | 'document' | 'audio' | 'video';
-  dataUrl?: string; // Base64 data URL for images/video/audio
+  /** In-memory playable URL (data: or blob:). Never persisted: media lives encrypted in the vault. */
+  dataUrl?: string;
   size?: number;
+  mimeType?: string;
+  /** SHA-256 (hex) of the original bytes, recorded when the media entered the vault. */
+  sha256?: string;
+  /** True when the original bytes are stored in the encrypted media store. */
+  inVault?: boolean;
   uploadedAt: string;
   isLiveCapture?: boolean;
   captureMethod?: 'camera' | 'upload' | 'voice_recording';
@@ -53,8 +59,6 @@ export interface Incident {
 }
 
 export interface AppSettings {
-  pinEnabled: boolean;
-  pinCode: string; // 4 digit string
   quickExitEnabled: boolean;
   quickExitUrl: string; // e.g., 'https://www.google.com' or 'https://weather.com'
   trustedContactName?: string;

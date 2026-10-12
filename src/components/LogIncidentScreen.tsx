@@ -4,7 +4,7 @@ import { Attachment, CategoryType, Incident, PersonInvolved } from '../types';
 import { extractIncidentFromRawText } from '../aiEngine';
 import { CameraCaptureModal } from './CameraCaptureModal';
 import { StorageService } from '../storageService';
-import { contributeAnonymousSignal } from '../firebaseService';
+import { COMMUNITY_SIGNALS_ENABLED, contributeAnonymousSignal } from '../firebaseService';
 
 interface LogIncidentScreenProps {
   onSaveIncident: (incident: Incident) => void;
@@ -382,7 +382,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
       isQuickCaptureDraft: false
     };
 
-    if (contributeSignalOptIn && capturedCoords) {
+    if (COMMUNITY_SIGNALS_ENABLED && contributeSignalOptIn && capturedCoords) {
       contributeAnonymousSignal(capturedCoords.lat, capturedCoords.lng, editCategory);
     }
 
@@ -436,7 +436,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
     return (
       <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-cream text-cream-ink border border-black/10">
         <Sparkles className="w-2.5 h-2.5 text-magenta" />
-        <span>AI-suggested</span>
+        <span>Auto-suggested</span>
       </span>
     );
   };
@@ -898,7 +898,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
               <div>
                 <div className="flex items-center space-x-2 text-magenta font-display text-lg tracking-wider uppercase">
                   <CheckCircle2 className="w-5 h-5" />
-                  <span>REVIEW AI DRAFT</span>
+                  <span>REVIEW SUGGESTED DRAFT</span>
                 </div>
                 <h3 className="font-display text-3xl text-cream-ink mt-1 leading-none">VERIFY EXTRACTED FIELDS</h3>
                 
@@ -981,7 +981,7 @@ export const LogIncidentScreen: React.FC<LogIncidentScreenProps> = ({ onSaveInci
                       )}
                     </div>
 
-                    {locationOptIn && capturedCoords && (
+                    {COMMUNITY_SIGNALS_ENABLED && locationOptIn && capturedCoords && (
                       <div className="bg-cream p-3 rounded-2xl border border-black/10 space-y-1 mt-2">
                         <label className="flex items-start space-x-2 cursor-pointer">
                           <input

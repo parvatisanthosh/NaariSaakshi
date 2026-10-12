@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShieldAlert, ArrowRight, X, CheckCircle2 } from 'lucide-react';
 import { ActiveTab, Navigation } from './components/Navigation';
-import { PinLockModal } from './components/PinLockModal';
+import { VaultUnlockModal } from './components/VaultUnlockModal';
 import { SosPanelModal } from './components/SosPanelModal';
 import { QuickCaptureScreen } from './components/QuickCaptureScreen';
 import { RecordCallScreen } from './components/RecordCallScreen';
@@ -15,7 +15,8 @@ import { ReportScreen } from './components/ReportScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { FAQScreen } from './components/FAQScreen';
 import { LoadingScreen } from './components/LoadingScreen';
-import { StorageService } from './storageService';
+import { StorageService, StorageFullError } from './storageService';
+import type { VaultStatus } from './vault/vault';
 import { AppSettings, Incident } from './types';
 import { analyzeIncidentPatterns } from './aiEngine';
 
@@ -26,8 +27,10 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>(StorageService.getSettings());
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   
-  // Security PIN lock state, SOS panel state & Chatbot state
+  // Vault lock state, SOS panel state & Chatbot state
+  const [vaultStatus, setVaultStatus] = useState<VaultStatus | null>(null);
   const [isLocked, setIsLocked] = useState<boolean>(false);
+  const isProtected = vaultStatus?.mode === 'passphrase';
   const [showSosPanel, setShowSosPanel] = useState<boolean>(false);
   const [showChatbot, setShowChatbot] = useState<boolean>(false);
 
@@ -97,23 +100,22 @@ export const App: React.FC = () => {
   useEffect(() => {
     // Load initial storage data
     const loadInitialData = async () => {
-      const loadedSettings = StorageService.getSettings();
-      setSettings(loadedSettings);
-
-      if (loadedSettings.pinEnabled && loadedSettings.pinCode) {
+      setSettings(StorageService.getSettings());
+      const status = await StorageService.init();
+      setVaultStatus(status);
+      if (status.unlocked) {
+        setIncidents(await StorageService.getIncidents());
+      } else {
         setIsLocked(true);
       }
-
-      const loadedIncidents = await StorageService.getIncidents();
-      setIncidents(loadedIncidents);
     };
 
     loadInitialData();
   }, []);
 
   useEffect(() => {
-    // Only set up auto-lock if PIN is enabled, PIN code exists, and app is currently unlocked
-    if (!settings.pinEnabled || !settings.pinCode || isLocked) {
+    // Auto-lock only applies to passphrase-protected vaults that are currently unlocked
+    if (!isProtected || isLocked) {
       return;
     }
 
@@ -126,7 +128,7 @@ export const App: React.FC = () => {
     const resetInactivityTimer = () => {
       if (inactivityTimer) clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
-        setIsLocked(true);
+        lockVault();
       }, INACTIVITY_TIMEOUT_MS);
     };
 
@@ -139,12 +141,12 @@ export const App: React.FC = () => {
         blurTimeRef.current = Date.now();
         if (blurTimer) clearTimeout(blurTimer);
         blurTimer = setTimeout(() => {
-          setIsLocked(true);
+          lockVault();
         }, BLUR_TIMEOUT_MS);
       } else {
         if (blurTimer) clearTimeout(blurTimer);
         if (blurTimeRef.current && Date.now() - blurTimeRef.current >= BLUR_TIMEOUT_MS) {
-          setIsLocked(true);
+          lockVault();
         }
         blurTimeRef.current = null;
         resetInactivityTimer();
@@ -157,14 +159,14 @@ export const App: React.FC = () => {
       }
       if (blurTimer) clearTimeout(blurTimer);
       blurTimer = setTimeout(() => {
-        setIsLocked(true);
+        lockVault();
       }, BLUR_TIMEOUT_MS);
     };
 
     const handleWindowFocus = () => {
       if (blurTimer) clearTimeout(blurTimer);
       if (blurTimeRef.current && Date.now() - blurTimeRef.current >= BLUR_TIMEOUT_MS) {
-        setIsLocked(true);
+        lockVault();
       }
       blurTimeRef.current = null;
       resetInactivityTimer();
@@ -190,17 +192,49 @@ export const App: React.FC = () => {
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [settings.pinEnabled, settings.pinCode, isLocked]);
+  }, [isProtected, isLocked]);
+
+  // Drops the vault key and every decrypted incident from memory
+  const lockVault = () => {
+    StorageService.lock();
+    setIncidents([]);
+    setSelectedIncident(null);
+    setIsLocked(true);
+  };
+
+  const handleUnlocked = async (viaRecoveryCode: boolean) => {
+    setVaultStatus(StorageService.vaultStatus());
+    setIncidents(await StorageService.getIncidents());
+    setIsLocked(false);
+    if (viaRecoveryCode) {
+      setActiveTab('settings');
+      triggerToast('Unlocked with recovery code. Please set a new passphrase.');
+    }
+  };
+
+  const refreshVaultStatus = () => setVaultStatus(StorageService.vaultStatus());
+
+  const reportSaveError = (err: unknown) => {
+    console.error('Failed to save incident:', err);
+    triggerToast(
+      err instanceof StorageFullError
+        ? 'Not saved: device storage is full. Export a backup and free some space.'
+        : 'Not saved: something went wrong writing to the encrypted vault.'
+    );
+  };
 
   // Save Incident Handler
   const handleSaveIncident = async (savedIncident: Incident) => {
     const previousAnalysis = analyzeIncidentPatterns(incidents);
     const exists = incidents.some(i => i.id === savedIncident.id);
     let updatedList: Incident[];
-    if (exists) {
-      updatedList = await StorageService.updateIncident(savedIncident);
-    } else {
-      updatedList = await StorageService.addIncident(savedIncident);
+    try {
+      updatedList = exists
+        ? await StorageService.updateIncident(savedIncident)
+        : await StorageService.addIncident(savedIncident);
+    } catch (err) {
+      reportSaveError(err);
+      return;
     }
     setIncidents(updatedList);
     setSelectedIncident(null);
@@ -238,7 +272,13 @@ export const App: React.FC = () => {
   };
 
   const handleSaveQuickCaptureDraft = async (newDraft: Incident, toastMessage?: string) => {
-    const updatedList = await StorageService.addIncident(newDraft);
+    let updatedList: Incident[];
+    try {
+      updatedList = await StorageService.addIncident(newDraft);
+    } catch (err) {
+      reportSaveError(err);
+      return;
+    }
     setIncidents(updatedList);
     setActiveTab('timeline');
     if (toastMessage) {
@@ -250,9 +290,13 @@ export const App: React.FC = () => {
 
   // Update Incident Handler
   const handleUpdateIncident = async (updated: Incident) => {
-    const updatedList = await StorageService.updateIncident(updated);
-    setIncidents(updatedList);
-    setSelectedIncident(updated);
+    try {
+      const updatedList = await StorageService.updateIncident(updated);
+      setIncidents(updatedList);
+      setSelectedIncident(updatedList.find(i => i.id === updated.id) ?? updated);
+    } catch (err) {
+      reportSaveError(err);
+    }
   };
 
   // Delete Incident Handler
@@ -263,12 +307,8 @@ export const App: React.FC = () => {
   };
 
   // Settings Handlers
-  const handleUpdateSettings = async (newSettings: AppSettings) => {
-    const saved = StorageService.saveSettings(newSettings);
-    setSettings(saved);
-    if (incidents.length > 0) {
-      await StorageService.saveIncidents(incidents);
-    }
+  const handleUpdateSettings = (newSettings: AppSettings) => {
+    setSettings(StorageService.saveSettings(newSettings));
   };
 
   const handleResetSeedData = async () => {
@@ -289,8 +329,11 @@ export const App: React.FC = () => {
   };
 
   const handleImportData = async (imported: Incident[]) => {
-    await StorageService.saveIncidents(imported);
-    setIncidents(imported);
+    try {
+      setIncidents(await StorageService.saveIncidents(imported));
+    } catch (err) {
+      reportSaveError(err);
+    }
   };
 
   return (
@@ -299,11 +342,11 @@ export const App: React.FC = () => {
       {/* Session Loading Screen Preloader */}
       {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
 
-      {/* PIN Security Modal */}
-      {isLocked && settings.pinEnabled && (
-        <PinLockModal
-          correctPin={settings.pinCode}
-          onSuccess={() => setIsLocked(false)}
+      {/* Vault Unlock Modal */}
+      {isLocked && isProtected && (
+        <VaultUnlockModal
+          hasRecoveryCode={!!vaultStatus?.hasRecoveryCode}
+          onUnlocked={handleUnlocked}
         />
       )}
 
@@ -485,6 +528,9 @@ export const App: React.FC = () => {
                 onClearAllData={handleClearAllData}
                 onClearLocationData={handleClearLocationData}
                 onImportData={handleImportData}
+                vaultStatus={vaultStatus}
+                onVaultChanged={refreshVaultStatus}
+                onLockNow={lockVault}
                 onBack={() => handleTabChange('timeline')}
               />
             )}

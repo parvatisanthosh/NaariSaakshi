@@ -62,7 +62,7 @@ export const Navigation: React.FC<NavbarProps> = ({
               className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-magenta text-xs font-medium flex items-center space-x-1 transition active:scale-95"
             >
               <MessageSquare className="w-3.5 h-3.5 text-magenta" />
-              <span className="hidden md:inline">Ask AI</span>
+              <span className="hidden md:inline">Help</span>
             </button>
 
             {/* One-Tap Quick Capture Button */}

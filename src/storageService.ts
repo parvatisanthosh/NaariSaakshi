@@ -1,4 +1,10 @@
-import { Incident, AppSettings } from './types';
+import { Incident, AppSettings, Attachment } from './types';
+import * as vault from './vault/vault';
+import { VaultStatus } from './vault/vault';
+import { sha256Hex } from './vault/crypto';
+import { bytesToDataUrl, dataUrlToBytes, isDataUrl } from './vault/encoding';
+import { hasLegacyData, readLegacyData, removeLegacyData } from './vault/legacy';
+
 
 export const INITIAL_SEED_INCIDENTS: Incident[] = [
   {
@@ -132,9 +138,8 @@ export const INITIAL_SEED_INCIDENTS: Incident[] = [
   }
 ];
 
+
 export const DEFAULT_SETTINGS: AppSettings = {
-  pinEnabled: false,
-  pinCode: '',
   quickExitEnabled: true,
   quickExitUrl: 'https://weather.com',
   localOnlyStorage: true,
@@ -142,235 +147,292 @@ export const DEFAULT_SETTINGS: AppSettings = {
   demoMode: true
 };
 
-const STORAGE_KEY_INCIDENTS = 'naarisaakshi_incidents_v1';
 const STORAGE_KEY_SETTINGS = 'naarisaakshi_settings_v1';
-const STORAGE_KEY_SALT = 'naarisaakshi_salt_v1';
-const STORAGE_KEY_DEVICE_SECRET = 'naarisaakshi_device_secret_v1';
+const LOW_STORAGE_HEADROOM_BYTES = 50 * 1024 * 1024;
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
+export interface StorageUsageInfo {
+  usedBytes: number;
+  quotaBytes: number | null;
+  usedMB: number;
+  isLowStorage: boolean;
+  /** Whether the browser granted persistent storage (won't evict under pressure). */
+  persisted: boolean | null;
 }
 
-function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+export class StorageFullError extends Error {
+  constructor() {
+    super('Device storage is full');
+    this.name = 'StorageFullError';
   }
-  return bytes.buffer;
 }
 
-function getOrCreateSalt(): Uint8Array {
-  let saltStr = localStorage.getItem(STORAGE_KEY_SALT);
-  if (!saltStr) {
-    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-    saltStr = arrayBufferToBase64(saltBytes.buffer);
-    localStorage.setItem(STORAGE_KEY_SALT, saltStr);
-    return saltBytes;
-  }
-  return new Uint8Array(base64ToArrayBuffer(saltStr));
+// Decrypted, hydrated incidents for this unlocked session. Cleared on lock.
+let cache: Incident[] | null = null;
+// blob: URLs handed to <video>/<audio>; revoked on lock so decrypted media is released.
+const objectUrls = new Set<string>();
+let usageInfo: StorageUsageInfo = { usedBytes: 0, quotaBytes: null, usedMB: 0, isLowStorage: false, persisted: null };
+
+const mediaKey = (incidentId: string, attachmentId: string) => `${incidentId}/${attachmentId}`;
+
+const byNewestFirst = (a: Incident, b: Incident) =>
+  new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+
+function isQuotaError(e: unknown): boolean {
+  const err = e as { name?: string; inner?: { name?: string } };
+  return err?.name === 'QuotaExceededError' || err?.inner?.name === 'QuotaExceededError';
 }
 
-function getOrCreateDeviceSecret(): string {
-  let secret = localStorage.getItem(STORAGE_KEY_DEVICE_SECRET);
-  if (!secret) {
-    const secretBytes = crypto.getRandomValues(new Uint8Array(32));
-    secret = arrayBufferToBase64(secretBytes.buffer);
-    localStorage.setItem(STORAGE_KEY_DEVICE_SECRET, secret);
+/**
+ * Writes one incident: new media (data: URLs) is moved into the encrypted media store with
+ * its SHA-256 recorded, URLs are stripped from the stored record, and media the incident
+ * no longer references is deleted.
+ */
+async function persistIncident(incident: Incident, previous?: Incident): Promise<Incident> {
+  const storedAttachments: Attachment[] = [];
+  try {
+    for (const att of incident.attachments) {
+      const { dataUrl, ...rest } = att;
+      if (isDataUrl(dataUrl) && !att.inVault) {
+        const { mimeType, bytes } = dataUrlToBytes(dataUrl);
+        await vault.putMedia(mediaKey(incident.id, att.id), bytes);
+        storedAttachments.push({ ...rest, mimeType, size: bytes.length, sha256: await sha256Hex(bytes), inVault: true });
+      } else {
+        storedAttachments.push(rest);
+      }
+    }
+    await vault.putRecord({ ...incident, attachments: storedAttachments });
+  } catch (e) {
+    if (isQuotaError(e)) throw new StorageFullError();
+    throw e;
   }
-  return secret;
+
+  const keep = new Set(storedAttachments.filter(a => a.inVault).map(a => a.id));
+  for (const old of previous?.attachments ?? []) {
+    if (old.inVault && !keep.has(old.id)) await vault.deleteMedia(mediaKey(incident.id, old.id));
+  }
+
+  // Keep the caller's in-memory URLs so freshly captured media plays without a re-decrypt.
+  return {
+    ...incident,
+    attachments: storedAttachments.map((a, i) => ({ ...a, dataUrl: incident.attachments[i].dataUrl }))
+  };
 }
 
-async function getEncryptionPassphrase(): Promise<string> {
-  const settings = StorageService.getSettings();
-  if (settings.pinEnabled && settings.pinCode) {
-    return settings.pinCode;
-  }
-  return getOrCreateDeviceSecret();
-}
-
-async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
-  const encoder = new TextEncoder();
-  const passphraseBytes = encoder.encode(passphrase);
-  const baseKey = await crypto.subtle.importKey(
-    'raw',
-    passphraseBytes,
-    { name: 'PBKDF2' },
-    false,
-    ['deriveKey']
+/** Decrypts vault media into browser-playable URLs. */
+async function hydrate(incident: Incident): Promise<Incident> {
+  const attachments = await Promise.all(
+    incident.attachments.map(async att => {
+      if (!att.inVault) return att;
+      const bytes = await vault.getMedia(mediaKey(incident.id, att.id));
+      if (!bytes) return { ...att, inVault: false };
+      const mime = att.mimeType || 'application/octet-stream';
+      // Images stay as data URLs because the PDF exporter embeds them directly.
+      if (att.type === 'image') return { ...att, dataUrl: bytesToDataUrl(bytes, mime) };
+      const url = URL.createObjectURL(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: mime }));
+      objectUrls.add(url);
+      return { ...att, dataUrl: url };
+    })
   );
-  return await crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt: salt.buffer as ArrayBuffer,
-      iterations: 100000,
-      hash: 'SHA-256'
-    },
-    baseKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
+  return { ...incident, attachments };
 }
 
-async function encryptData(plainText: string): Promise<string> {
-  const salt = getOrCreateSalt();
-  const passphrase = await getEncryptionPassphrase();
-  const key = await deriveKey(passphrase, salt);
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encoder = new TextEncoder();
-  const encryptedBuffer = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoder.encode(plainText)
-  );
-
-  return JSON.stringify({
-    v: 1,
-    encrypted: true,
-    iv: arrayBufferToBase64(iv.buffer as ArrayBuffer),
-    salt: arrayBufferToBase64(salt.buffer as ArrayBuffer),
-    ciphertext: arrayBufferToBase64(encryptedBuffer)
-  });
+async function writeAll(incidents: Incident[]): Promise<Incident[]> {
+  await vault.clearAll();
+  const written: Incident[] = [];
+  for (const inc of incidents) written.push(await persistIncident(inc));
+  cache = written.sort(byNewestFirst);
+  void StorageService.refreshStorageEstimate();
+  return cache;
 }
 
-async function decryptData(encryptedJsonStr: string): Promise<string> {
-  const payload = JSON.parse(encryptedJsonStr);
-  const iv = new Uint8Array(base64ToArrayBuffer(payload.iv));
-  const salt = new Uint8Array(base64ToArrayBuffer(payload.salt));
-  const ciphertext = base64ToArrayBuffer(payload.ciphertext) as ArrayBuffer;
-  const passphrase = await getEncryptionPassphrase();
-  const key = await deriveKey(passphrase, salt);
-
-  const decryptedBuffer = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    ciphertext
-  );
-  const decoder = new TextDecoder();
-  return decoder.decode(decryptedBuffer);
+/**
+ * First run: moves any pre-vault localStorage data into the vault (verifying every record
+ * landed before deleting the original), or seeds demo data. Safe to re-run if interrupted.
+ */
+async function initializeVault(): Promise<void> {
+  if (hasLegacyData()) {
+    const legacy = await readLegacyData();
+    if (legacy) {
+      await writeAll(legacy.incidents);
+      const migratedIds = new Set((await vault.listRecords<Incident>()).map(i => i.id));
+      if (!legacy.incidents.every(i => migratedIds.has(i.id))) {
+        throw new Error('Migration verification failed; legacy data left in place');
+      }
+      if (legacy.pin) {
+        // Keep the user's existing unlock; Settings flags it as weak and asks for a passphrase.
+        await vault.setPassphrase(legacy.pin, { weak: true, withRecovery: false });
+      }
+      removeLegacyData();
+    }
+  } else if (StorageService.getSettings().demoMode) {
+    await writeAll(INITIAL_SEED_INCIDENTS);
+  }
+  await vault.markInitialized();
+  StorageService.lock();
 }
 
 export class StorageService {
-  static async getIncidents(): Promise<Incident[]> {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY_INCIDENTS);
-      if (!data) {
-        await this.saveIncidents(INITIAL_SEED_INCIDENTS);
-        return INITIAL_SEED_INCIDENTS;
+  /** Opens (or creates) the vault and runs first-run migration/seeding. */
+  static async init(): Promise<VaultStatus> {
+    const st = await vault.openVault();
+    if (!st.initialized && st.unlocked) {
+      try {
+        await initializeVault();
+      } catch (e) {
+        console.error('Vault initialization failed:', e);
       }
-      
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        // Plaintext legacy / seed data -> auto-encrypt and return
-        await this.saveIncidents(parsed);
-        return parsed;
-      }
-
-      if (parsed && parsed.encrypted) {
-        const decryptedStr = await decryptData(data);
-        return JSON.parse(decryptedStr);
-      }
-
-      return INITIAL_SEED_INCIDENTS;
-    } catch (e) {
-      console.error('Failed to load incidents from storage:', e);
-      return INITIAL_SEED_INCIDENTS;
     }
+    void StorageService.requestPersistence();
+    void StorageService.refreshStorageEstimate();
+    return vault.status();
   }
 
-  static async saveIncidents(incidents: Incident[]): Promise<void> {
-    try {
-      const plainText = JSON.stringify(incidents);
-      const encryptedPayload = await encryptData(plainText);
-      localStorage.setItem(STORAGE_KEY_INCIDENTS, encryptedPayload);
-    } catch (e: any) {
-      console.error('Failed to save incidents to storage:', e);
-      if (e?.name === 'QuotaExceededError' || e?.code === 22 || e?.number === -2147024882) {
-        console.warn('Storage quota exceeded. Preserving incident entry metadata and narrative.');
-        try {
-          const lightweightIncidents = incidents.map(inc => ({
-            ...inc,
-            attachments: inc.attachments.map(att => {
-              if (att.dataUrl && att.dataUrl.length > 500000) {
-                return { ...att, dataUrl: undefined };
-              }
-              return att;
-            })
-          }));
-          const plainTextLight = JSON.stringify(lightweightIncidents);
-          const encryptedLight = await encryptData(plainTextLight);
-          localStorage.setItem(STORAGE_KEY_INCIDENTS, encryptedLight);
-        } catch (innerErr) {
-          console.error('Fallback lightweight save failed:', innerErr);
-        }
-      }
+  static vaultStatus(): VaultStatus {
+    return vault.status();
+  }
+
+  static async unlock(secret: string): Promise<boolean> {
+    return vault.unlockWithPassphrase(secret);
+  }
+
+  static async unlockWithRecoveryCode(code: string): Promise<boolean> {
+    return vault.unlockWithRecoveryCode(code);
+  }
+
+  /** Drops the key and all decrypted data from memory. No-op for unprotected vaults. */
+  static lock(): void {
+    if (vault.status().mode !== 'passphrase') return;
+    vault.lock();
+    cache = null;
+    objectUrls.forEach(url => URL.revokeObjectURL(url));
+    objectUrls.clear();
+  }
+
+  /** Sets or changes the passphrase. Returns the new recovery code to show once. */
+  static async setPassphrase(secret: string): Promise<string | null> {
+    return vault.setPassphrase(secret);
+  }
+
+  static async removePassphrase(): Promise<void> {
+    return vault.removePassphrase();
+  }
+
+  static async getIncidents(): Promise<Incident[]> {
+    if (!cache) {
+      const records = await vault.listRecords<Incident>();
+      cache = (await Promise.all(records.map(hydrate))).sort(byNewestFirst);
     }
+    return cache;
+  }
+
+  /** Replaces every stored incident (used by import). */
+  static async saveIncidents(incidents: Incident[]): Promise<Incident[]> {
+    return writeAll(incidents);
   }
 
   static async addIncident(incident: Incident): Promise<Incident[]> {
-    const incidents = [incident, ...(await this.getIncidents())];
-    await this.saveIncidents(incidents);
-    return incidents;
+    const current = await this.getIncidents();
+    const saved = await persistIncident(incident);
+    cache = [saved, ...current.filter(i => i.id !== saved.id)].sort(byNewestFirst);
+    void StorageService.refreshStorageEstimate();
+    return cache;
   }
 
   static async updateIncident(updated: Incident): Promise<Incident[]> {
-    const incidents = (await this.getIncidents()).map(inc => inc.id === updated.id ? updated : inc);
-    await this.saveIncidents(incidents);
-    return incidents;
+    const current = await this.getIncidents();
+    const previous = current.find(i => i.id === updated.id);
+    const saved = await persistIncident(updated, previous);
+    cache = current.map(i => (i.id === saved.id ? saved : i));
+    void StorageService.refreshStorageEstimate();
+    return cache;
   }
 
   static async deleteIncident(id: string): Promise<Incident[]> {
-    const incidents = (await this.getIncidents()).filter(inc => inc.id !== id);
-    await this.saveIncidents(incidents);
-    return incidents;
+    const current = await this.getIncidents();
+    const target = current.find(i => i.id === id);
+    await vault.deleteRecord(id);
+    for (const att of target?.attachments ?? []) {
+      if (att.inVault) await vault.deleteMedia(mediaKey(id, att.id));
+    }
+    cache = current.filter(i => i.id !== id);
+    void StorageService.refreshStorageEstimate();
+    return cache;
   }
 
   static async resetToSeedData(): Promise<Incident[]> {
-    await this.saveIncidents(INITIAL_SEED_INCIDENTS);
-    return INITIAL_SEED_INCIDENTS;
+    return writeAll(INITIAL_SEED_INCIDENTS);
   }
 
   static async clearAllData(): Promise<Incident[]> {
-    localStorage.removeItem(STORAGE_KEY_INCIDENTS);
-    return [];
+    await vault.clearAll();
+    cache = [];
+    void StorageService.refreshStorageEstimate();
+    return cache;
   }
 
   static async clearAllLocationData(): Promise<Incident[]> {
-    const incidents = await this.getIncidents();
-    const updated = incidents.map(inc => {
+    const current = await this.getIncidents();
+    const updated: Incident[] = [];
+    for (const inc of current) {
       const { latitude, longitude, ...rest } = inc;
-      return rest;
-    });
-    await this.saveIncidents(updated);
-    return updated;
+      updated.push(await persistIncident(rest, inc));
+    }
+    cache = updated;
+    return cache;
   }
 
-  static getStorageUsageInfo(): { usedBytes: number; usedMB: number; isLowStorage: boolean } {
+  /** Incidents with every attachment inlined as a data URL, for a self-contained JSON backup. */
+  static async exportIncidentsWithMedia(): Promise<Incident[]> {
+    const records = await vault.listRecords<Incident>();
+    return Promise.all(
+      records.sort(byNewestFirst).map(async inc => ({
+        ...inc,
+        attachments: await Promise.all(
+          inc.attachments.map(async att => {
+            if (!att.inVault) return att;
+            const bytes = await vault.getMedia(mediaKey(inc.id, att.id));
+            const { inVault, ...rest } = att;
+            return bytes ? { ...rest, dataUrl: bytesToDataUrl(bytes, att.mimeType || 'application/octet-stream') } : rest;
+          })
+        )
+      }))
+    );
+  }
+
+  /** Last known usage; call refreshStorageEstimate() to update it. */
+  static getStorageUsageInfo(): StorageUsageInfo {
+    return usageInfo;
+  }
+
+  static async refreshStorageEstimate(): Promise<StorageUsageInfo> {
     try {
-      let totalBytes = 0;
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('evidenceher')) {
-          const val = localStorage.getItem(key);
-          if (val) {
-            totalBytes += key.length + val.length;
-          }
-        }
+      const est = await navigator.storage?.estimate?.();
+      if (est) {
+        const usedBytes = est.usage ?? 0;
+        const quotaBytes = est.quota ?? null;
+        usageInfo = {
+          ...usageInfo,
+          usedBytes,
+          quotaBytes,
+          usedMB: parseFloat((usedBytes / (1024 * 1024)).toFixed(2)),
+          isLowStorage: quotaBytes !== null && quotaBytes - usedBytes < LOW_STORAGE_HEADROOM_BYTES
+        };
       }
-      const usedMB = totalBytes / (1024 * 1024);
-      return {
-        usedBytes: totalBytes,
-        usedMB: parseFloat(usedMB.toFixed(2)),
-        isLowStorage: usedMB >= 4.0
-      };
     } catch {
-      return { usedBytes: 0, usedMB: 0, isLowStorage: false };
+      // Estimates are advisory; keep the last value.
+    }
+    return usageInfo;
+  }
+
+  /** Asks the browser not to evict the vault under storage pressure. */
+  static async requestPersistence(): Promise<boolean | null> {
+    try {
+      if (!navigator.storage?.persist) return null;
+      const persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+      usageInfo = { ...usageInfo, persisted };
+      return persisted;
+    } catch {
+      return null;
     }
   }
 
@@ -378,7 +440,9 @@ export class StorageService {
     try {
       const data = localStorage.getItem(STORAGE_KEY_SETTINGS);
       if (!data) return DEFAULT_SETTINGS;
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
+      // pinCode/pinEnabled are legacy fields from the pre-vault PIN lock; never read them back.
+      const { pinCode, pinEnabled, ...rest } = JSON.parse(data);
+      return { ...DEFAULT_SETTINGS, ...rest };
     } catch (e) {
       return DEFAULT_SETTINGS;
     }

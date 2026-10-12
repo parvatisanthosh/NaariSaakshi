@@ -86,11 +86,11 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Forensic Timestamp & Location Watermark Overlay
+    // Visible date/time/location label. No app branding, so a shared photo doesn't reveal the app.
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const watermarkText = `NAARISAAKSHI FORENSIC LOG • ${dateStr} ${timeStr} • ${locationText || 'GPS Encrypted'}`;
+    const watermarkText = `${dateStr} ${timeStr}${locationText ? ` • ${locationText}` : ''}`;
 
     ctx.fillStyle = 'rgba(13, 11, 16, 0.75)';
     ctx.fillRect(0, canvas.height - 44, canvas.width, 44);
@@ -140,7 +140,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
               </div>
               <div>
                 <h3 className="font-display text-3xl text-cream-ink leading-none">LIVE PHOTO CAPTURE</h3>
-                <span className="text-xs font-mono font-bold text-cream-ink/60">FORENSIC TIMESTAMP WATERMARKING</span>
+                <span className="text-xs font-mono font-bold text-cream-ink/60">DATE & TIME LABEL</span>
               </div>
             </div>
 
@@ -149,7 +149,7 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
                 <strong>Camera Permission Explanation:</strong> NaariSaakshi needs camera access to let you capture a timestamped photo. This photo stays on your device.
               </p>
               <p className="text-xs text-magenta font-bold">
-                • A tamper-proof timestamp (date, time & location) will be burned directly into the image pixels.
+                • A visible date, time and (if you allowed it) location label is added to the photo. It makes the photo easier to read in a report, but it is not proof of when the photo was taken.
               </p>
             </div>
 

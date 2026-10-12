@@ -16,9 +16,9 @@ interface MythFactItem {
 const MYTH_FACT_ITEMS: MythFactItem[] = [
   {
     id: 1,
-    statement: "I need the other person's permission to record our call.",
+    statement: "If I record a call I'm part of, the recording is automatically valid evidence.",
     isFact: false,
-    explanation: "Myth — Under Supreme Court rulings, one-party consent applies in India if you are personally a participant on the call."
+    explanation: "Myth — Courts may accept a recording that is relevant, accurate and untampered, but it usually needs the original file and an electronic-evidence certificate (Section 63, Bharatiya Sakshya Adhiniyam). Whether recording was appropriate also depends on context."
   },
   {
     id: 2,
@@ -42,7 +42,7 @@ const MYTH_FACT_ITEMS: MythFactItem[] = [
     id: 5,
     statement: "You are legally entitled to receive a free copy of your FIR upon registration.",
     isFact: true,
-    explanation: "Fact — Section 154 of the CrPC/BNSS guarantees an immediate, free copy of the registered FIR to the complainant."
+    explanation: "Fact — Section 173(2) of the BNSS (formerly Section 154(2) CrPC) entitles the informant to a free copy of the registered FIR."
   }
 ];
 
@@ -220,7 +220,7 @@ export const RightsScreen: React.FC<RightsScreenProps> = ({ onOpenSos, onBack })
                 </div>
                 <div>
                   <h3 className="font-display text-2xl text-cream-ink tracking-wide">RECORDING CALLS & EVIDENCE</h3>
-                  <span className="text-xs font-medium text-cream-ink/70 block">One-party consent rules & digital authentication</span>
+                  <span className="text-xs font-medium text-cream-ink/70 block">What courts have said & keeping originals</span>
                 </div>
               </div>
               {expandedCard === 'calls' ? <ChevronUp className="w-5 h-5 text-cream-ink" /> : <ChevronDown className="w-5 h-5 text-cream-ink" />}
@@ -228,8 +228,8 @@ export const RightsScreen: React.FC<RightsScreenProps> = ({ onOpenSos, onBack })
 
             {expandedCard === 'calls' && (
               <div className="p-6 pt-2 border-t border-black/10 space-y-3 text-sm text-cream-ink/90 leading-relaxed font-medium bg-cream/30">
-                <p>• <strong>One-Party Consent:</strong> In India, you can legally record phone calls you are personally part of without telling the other person under Supreme Court precedents.</p>
-                <p>• <strong>Evidence Certification:</strong> Using recordings in formal legal/ICC proceedings requires electronic evidence certification (Section 65B IPC / Section 63 BSA).</p>
+                <p>• <strong>Recordings as Evidence:</strong> Courts have admitted recordings of conversations when they are relevant, accurate and untampered (R.M. Malkani v. State of Maharashtra, 1973). This is not blanket permission to record: privacy, workplace rules and the setting all matter, and you should only record conversations you are part of.</p>
+                <p>• <strong>Evidence Certification:</strong> Electronic records used in court generally need a certificate under Section 63 of the Bharatiya Sakshya Adhiniyam, 2023 (formerly Section 65B of the Indian Evidence Act). Keep the original, unedited file.</p>
                 <p>• <strong>Timely Logs Matter:</strong> Contemporaneous timestamped notes preserved right after events occur carry significant weight when building a record.</p>
               </div>
             )}
